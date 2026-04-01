@@ -3,6 +3,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 const equipoRoutes = require('./routes/equipoRoutes');
+const partidoRoutes = require('./routes/partidoRoutes');
+const jugadorRoutes = require('./routes/jugadorRoutes');
 
 const app = express();
 
@@ -12,6 +14,8 @@ app.use(express.json());
 
 // --- RUTAS ---
 app.use('/api/equipos', equipoRoutes);
+app.use('/api/partidos', partidoRoutes);
+app.use('/api/jugadores', jugadorRoutes);
 
 // --- ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 5000;
