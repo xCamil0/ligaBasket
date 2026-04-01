@@ -82,11 +82,11 @@ const finalizarPartido = async (req, res) => {
 
 const actualizarPartido = async (req, res) => {
     const { id } = req.params;
-    const { id_equipo_local, id_equipo_visitante, fecha, horario, lugar } = req.body;
+    const { id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar } = req.body;
     try {
         const resultado = await pool.query(
-            'UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, fecha = $3, horario = $4, lugar = $5 WHERE id = $6 RETURNING *',
-            [id_equipo_local, id_equipo_visitante, fecha, horario, lugar, id]
+            'UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, puntos_local = $3, puntos_visitante = $4, fecha = $5, horario = $6, lugar = $7 WHERE id = $8 RETURNING *',
+            [id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, id]
         );
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Partido no encontrado" });
         res.json({ mensaje: "Partido actualizado", partido: resultado.rows[0] });
