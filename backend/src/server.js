@@ -5,17 +5,20 @@ require('dotenv').config();
 const equipoRoutes = require('./routes/equipoRoutes');
 const partidoRoutes = require('./routes/partidoRoutes');
 const jugadorRoutes = require('./routes/jugadorRoutes');
+const tablaRoutes = require('./routes/tablaRoutes');
 
 const app = express();
 
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 // --- RUTAS ---
 app.use('/api/equipos', equipoRoutes);
 app.use('/api/partidos', partidoRoutes);
 app.use('/api/jugadores', jugadorRoutes);
+app.use('/api/tabla', tablaRoutes);
 
 // --- ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 5000;
