@@ -2,11 +2,16 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const equipoRoutes = require('./routes/equipoRoutes');
+
 const app = express();
 
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+
+// --- RUTAS ---
+app.use('/api/equipos', equipoRoutes);
 
 // --- ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 5000;
