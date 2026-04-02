@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const partidoController = require('../controllers/partidoController');
+const verificarToken = require('../middlewares/authMiddlewares');
 
 router.get('/', partidoController.obtenerPartidos);
 router.post('/', partidoController.crearPartido);

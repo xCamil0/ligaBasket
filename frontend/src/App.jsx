@@ -26,7 +26,7 @@ const TablaPosiciones = () => {
                 </thead>
                 <tbody>
                     {tabla.map((f) => (
-                        <tr key={f.id_equipo}>
+                        <tr key={f.equipo}>
                             <td>{f.posicion}</td>
                             {/* Link para ir al detalle del equipo */}
                             <td><Link to={`/equipos/${f.id_equipo || f.equipo}`}>{f.equipo}</Link></td>
