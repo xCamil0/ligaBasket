@@ -16,7 +16,18 @@ const obtenerEquipos = async (req, res) => {
 const crearEquipo = async (req, res) => {
     const { nombre, entrenador } = req.body; // Sacamos los datos del "paquete" que viene de Postman
 
+    if (!nombre || nombre.length < 3) {
+        return res.status(400).json({ 
+            error: "El nombre del equipo es obligatorio y debe tener al menos 3 caracteres" 
+        });
+    }
+
     try {
+        const existe = await pool.query('SELECT * FROM equipos WHERE nombre = $1', [nombre]);
+        if (existe.rows.length > 0) {
+            return res.status(400).json({ error: "Ya existe un equipo con ese nombre" });
+        }
+        
         const nuevoEquipo = await pool.query(
             'INSERT INTO equipos (nombre, entrenador) VALUES ($1, $2) RETURNING *',
             [nombre, entrenador]

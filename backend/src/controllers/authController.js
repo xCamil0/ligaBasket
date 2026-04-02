@@ -4,21 +4,37 @@ const jwt = require('jsonwebtoken');
 
 const login = async (req, res) => {
     const { username, password } = req.body;
+    const SECRET_KEY = 'Cam1016012448*';
+
     try {
-        const userRes = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
-        if (userRes.rows.length === 0) return res.status(401).json({ error: "Usuario no encontrado" });
-
-        const usuario = userRes.rows[0];
-        // Comparar contraseña cifrada
-        const validPassword = await bcrypt.compare(password, usuario.password);
-        if (!validPassword) return res.status(401).json({ error: "Contraseña incorrecta" });
-
-        // Crear Token (Dura 2 horas)
-        const token = jwt.sign({ id: usuario.id }, 'TU_CLAVE_SECRETA_SUPER_SEGURA', { expiresIn: '2h' });
+        // 1. Buscar al usuario
+        const result = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
         
-        res.json({ token, username: usuario.username });
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+
+        const usuario = result.rows[0];
+
+        // 2. Comparar contraseña con la versión cifrada en la DB
+        const esValida = await bcrypt.compare(password, usuario.password);
+        
+        if (!esValida) {
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+
+        // 3. Generar el Token (JWT)
+        const token = jwt.sign(
+            { id: usuario.id, username: usuario.username },
+            SECRET_KEY,
+            { expiresIn: '2h' } // El token expira en 2 horas
+        );
+
+        res.json({ mensaje: "Login exitoso", token, username: usuario.username });
+
     } catch (error) {
-        res.status(500).json({ error: "Error en el login" });
+        console.error(error);
+        res.status(500).json({ error: "Error en el servidor durante el login" });
     }
 };
 

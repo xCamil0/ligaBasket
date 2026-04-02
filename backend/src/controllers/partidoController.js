@@ -22,7 +22,7 @@ const obtenerPartidos = async (req, res) => {
 
 // Registrar un nuevo partido
 const crearPartido = async (req, res) => {
-    const { id_equipo_local, id_equipo_visitante, fecha, horario } = req.body;
+    const { id_equipo_local, id_equipo_visitante, fecha, horario, lugar } = req.body;
     try {
         const choque = await pool.query(
             `SELECT * FROM partidos 
@@ -37,7 +37,7 @@ const crearPartido = async (req, res) => {
 
         const nuevo = await pool.query(
             'INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [id_equipo_local, id_equipo_visitante, fecha, horario]
+            [id_equipo_local, id_equipo_visitante, fecha, horario, lugar]
         );
         res.status(201).json(nuevo.rows[0]);
     } catch (error) {

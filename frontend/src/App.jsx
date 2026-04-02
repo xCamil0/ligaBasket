@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom';
+import Login from './components/login';
+import RutaPrivada from './components/RutaPrivada';
+import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // --- COMPONENTES DE PÁGINAS ---
@@ -45,32 +47,68 @@ const Equipos = () => {
     const [nuevo, setNuevo] = useState({ nombre: '', entrenador: '' });
 
     const cargarEquipos = async () => {
-        const res = await axios.get('http://localhost:5000/api/equipos');
-        setEquipos(res.data);
+        try {
+            const res = await axios.get('http://localhost:5000/api/equipos');
+            setEquipos(res.data);
+        } catch (error) {
+            console.error("Error al cargar equipos:", error);
+        }
     };
 
     const crearEquipo = async (e) => {
         e.preventDefault();
-        await axios.post('http://localhost:5000/api/equipos', nuevo);
-        setNuevo({ nombre: '', entrenador: '' });
-        cargarEquipos();
+
+        // VALIDACIONES DE FRONTEND
+        if (nuevo.nombre.trim().length < 3) {
+            alert("El nombre del equipo debe tener al menos 3 caracteres");
+            return;
+        }
+
+        if (nuevo.entrenador.trim() === "") {
+            alert("El nombre del entrenador es obligatorio");
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        try {
+            // Enviamos los datos al backend
+            await axios.post('http://localhost:5000/api/equipos', nuevo, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Si sale bien, limpiamos el formulario y refrescamos la lista
+            setNuevo({ nombre: '', entrenador: '' });
+            cargarEquipos();
+            alert("Equipo creado con éxito");
+        } catch (error) {
+            // Capturamos el error 400 que configuramos en el Backend
+            alert(error.response?.data?.error || "Error al crear equipo");
+        }
     };
 
     useEffect(() => { cargarEquipos(); }, []);
 
     return (
         <div>
-            <h2>🏀 Equipos</h2>
-            <form onSubmit={crearEquipo} style={{ marginBottom: '20px' }}>
-                <input placeholder="Nombre" value={nuevo.nombre} onChange={e => setNuevo({...nuevo, nombre: e.target.value})} required />
-                <input placeholder="Entrenador" value={nuevo.entrenador} onChange={e => setNuevo({...nuevo, entrenador: e.target.value})} required />
-                <button type="submit">Agregar</button>
-            </form>
+            <h2>🏀 Gestión de Equipos</h2>
+            
+            {/* Formulario */}
+                {localStorage.getItem('token') ? (
+                    <form onSubmit={crearEquipo}>
+                        <input type="text" placeholder="Nombre del equipo" value={nuevo.nombre} onChange={(e) => setNuevo({...nuevo, nombre: e.target.value})} required />
+                        <input type="text" placeholder="Entrenador" value={nuevo.entrenador} onChange={(e) => setNuevo({...nuevo, entrenador: e.target.value})} required />
+                        <button type="submit">Agregar Equipo</button>
+                    </form>
+                ) : (
+                    <p>ℹ️ Inicia sesión como admin para gestionar equipos.</p>
+                )}
+
+            {/* Lista de equipos */}
             <ul>
                 {equipos.map(e => (
                     <li key={e.id}>
-                        {/* Hacemos que el nombre sea un link al detalle */}
-                        <Link to={`/equipos/${e.id}`}><strong>{e.nombre}</strong></Link> ({e.entrenador})
+                        <Link to={`/equipos/${e.id}`}><strong>{e.nombre}</strong></Link> - {e.entrenador}
                     </li>
                 ))}
             </ul>
@@ -159,21 +197,118 @@ const Partidos = () => {
     );
 };
 
+const Navbar = () => {
+    const navigate = useNavigate();
+    
+    // 1. Inicializamos el estado directamente desde localStorage para que sea rápido
+    const [auth, setAuth] = useState(localStorage.getItem('token'));
+    const [nombreUsuario, setNombreUsuario] = useState(localStorage.getItem('usuario'));
+
+    // 2. Efecto para sincronizar si el componente se monta/desmonta
+    useEffect(() => {
+        setAuth(localStorage.getItem('token'));
+        setNombreUsuario(localStorage.getItem('usuario'));
+    }, []);
+
+    const cerrarSesion = () => {
+        // Limpiamos los datos del navegador
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+
+        // Actualizamos el estado para que React redibuje el menú sin el botón de salir
+        setAuth(null);
+        setNombreUsuario(null);
+
+        alert("Has cerrado sesión");
+        
+        // Redirigimos al inicio y forzamos recarga para limpiar estados de Axios
+        window.location.href = '/'; 
+    };
+
+    return (
+        <nav style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: '0 20px', 
+            background: '#2c3e50', // El azul que te gustaba
+            color: 'white',
+            height: '60px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+        }}>
+            {/* LADO IZQUIERDO: Navegación pública */}
+            <div style={{ display: 'flex', gap: '20px' }}>
+                <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🏆 Tabla</Link>
+                <Link to="/pichichi" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🔥 Pichichi</Link>
+                <Link to="/partidos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>📅 Partidos</Link>
+                <Link to="/equipos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🏀 Equipos</Link>
+            </div>
+
+            {/* LADO DERECHO: Login / Logout */}
+            <div>
+                {auth ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#ecf0f1' }}>
+                            Bienvenido, <strong>{nombreUsuario}</strong>
+                        </span>
+                        <button 
+                            onClick={cerrarSesion} 
+                            style={{ 
+                                background: '#e74c3c', 
+                                color: 'white', 
+                                border: 'none', 
+                                padding: '8px 15px', 
+                                cursor: 'pointer',
+                                borderRadius: '4px',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                ) : (
+                    <Link 
+                        to="/login" 
+                        style={{ 
+                            background: '#27ae60', 
+                            color: 'white', 
+                            padding: '8px 15px', 
+                            borderRadius: '4px', 
+                            textDecoration: 'none',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        🔑 Entrar
+                    </Link>
+                )}
+            </div>
+        </nav>
+    );
+};
+
+axios.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // --- COMPONENTE PRINCIPAL ---
 function App() {
     return (
         <Router>
-            <nav style={{ padding: '20px', background: '#2c3e50', color: 'white', display: 'flex', gap: '20px' }}>
-                <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>TABLA</Link>
-                <Link to="/equipos" style={{ color: 'white', textDecoration: 'none' }}>EQUIPOS</Link>
-                <Link to="/partidos" style={{ color: 'white', textDecoration: 'none' }}>PARTIDOS</Link>
-                <Link to="/pichichi" style={{ color: 'white', textDecoration: 'none' }}>PICHICHI</Link>
-            </nav>
-
+            <Navbar />
             <div style={{ padding: '30px' }}>
                 <Routes>
                     <Route path="/" element={<TablaPosiciones />} />
-                    <Route path="/equipos" element={<Equipos />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/equipos" element={<RutaPrivada><Equipos /></RutaPrivada>} />
                     <Route path="/equipos/:id" element={<DetalleEquipo />} />
                     <Route path="/partidos" element={<Partidos />} />
                     <Route path="/pichichi" element={<Pichichi />} />
