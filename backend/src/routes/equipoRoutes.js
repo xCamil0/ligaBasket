@@ -7,5 +7,6 @@ router.get('/', equipoController.obtenerEquipos);
 router.post('/', equipoController.crearEquipo);
 router.delete('/:id', equipoController.eliminarEquipo);
 router.put('/:id', equipoController.actualizarEquipo);
+router.get('/:id/detalle', equipoController.obtenerDetalleEquipo);
 
 module.exports = router;

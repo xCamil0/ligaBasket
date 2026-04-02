@@ -6,6 +6,8 @@ const equipoRoutes = require('./routes/equipoRoutes');
 const partidoRoutes = require('./routes/partidoRoutes');
 const jugadorRoutes = require('./routes/jugadorRoutes');
 const tablaRoutes = require('./routes/tablaRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+const calendarioRoutes = require('./routes/calendarioRoutes');
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use('/api/equipos', equipoRoutes);
 app.use('/api/partidos', partidoRoutes);
 app.use('/api/jugadores', jugadorRoutes);
 app.use('/api/tabla', tablaRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/calendario', calendarioRoutes);
 
 // --- ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 5000;
