@@ -14,27 +14,56 @@ const obtenerEquipos = async (req, res) => {
 };
 
 const crearEquipo = async (req, res) => {
-    const { nombre, entrenador } = req.body; // Sacamos los datos del "paquete" que viene de Postman
+    const { nombre, entrenador, estadio, temporada_id, logo} = req.body;
 
     if (!nombre || nombre.length < 3) {
         return res.status(400).json({ 
             error: "El nombre del equipo es obligatorio y debe tener al menos 3 caracteres" 
         });
     }
+    if (!entrenador || entrenador.length < 3) {
+        return res.status(400).json({ 
+            error: "El nombre del entrenador es obligatorio y debe tener al menos 3 caracteres" 
+        });
+    }
+    if (!estadio || estadio.length < 3) {
+        return res.status(400).json({ 
+            error: "El nombre del estadio es obligatorio y debe tener al menos 3 caracteres" 
+        });
+    }
+    if (!temporada_id) {
+        return res.status(400).json({ 
+            error: "Debes especificar una temporada" 
+        });
+    }
 
     try {
-        const existe = await pool.query('SELECT * FROM equipos WHERE nombre = $1', [nombre]);
+        const tempExiste = await pool.query('SELECT * FROM temporadas WHERE id = $1', [temporada_id]);
+        if (tempExiste.rows.length === 0) {
+            return res.status(400).json({ error: "La temporada especificada no existe" });
+        }
+
+        const existe = await pool.query('SELECT * FROM equipos WHERE nombre = $1 AND temporada_id = $2', [nombre, temporada_id]);
         if (existe.rows.length > 0) {
-            return res.status(400).json({ error: "Ya existe un equipo con ese nombre" });
+            return res.status(400).json({ error: "Ya existe un equipo con ese nombre en la temporada especificada" });
+        }
+
+        let logo = '/uploads/default_logo.png'; // Ruta por defecto
+        if (req.file) {
+        logo = `/uploads/${req.file.filename}`;
         }
         
         const nuevoEquipo = await pool.query(
-            'INSERT INTO equipos (nombre, entrenador) VALUES ($1, $2) RETURNING *',
-            [nombre, entrenador]
+            'INSERT INTO equipos (nombre, entrenador, puntos_totales, estadio, logo, temporada_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [nombre, entrenador, 0, estadio, logo, temporada_id]
         );
         
         // Respondemos con el equipo recién creado
-        res.status(200).json(nuevoEquipo.rows[0]);
+        res.status(201).json({
+            mensaje: "Equipo creado exitosamente",
+            equipo: nuevoEquipo.rows[0]
+        });
+
     } catch (error) {
         console.error("Error al crear equipo:", error);
         res.status(500).json({ error: "No se pudo guardar el equipo" });
@@ -42,18 +71,25 @@ const crearEquipo = async (req, res) => {
 };
 
 const actualizarEquipo = async (req, res) => {
-    const { id } = req.params; // Sacamos el ID de la URL
-    const { nombre, entrenador } = req.body; // Sacamos los nuevos datos del body
+    const { id } = req.params;
+    const { nombre, entrenador, estadio, temporada_id, logo } = req.body;
 
     try {
-        const resultado = await pool.query(
-            'UPDATE equipos SET nombre = $1, entrenador = $2 WHERE id = $3 RETURNING *',
-            [nombre, entrenador, id]
-        );
 
-        if (resultado.rows.length === 0) {
+        const equipoActual = await pool.query('SELECT * FROM equipos WHERE id = $1', [id]);
+        if (equipoActual.rows.length === 0) {
             return res.status(404).json({ error: "Equipo no encontrado" });
         }
+
+        let logo = equipoActual.rows[0].foto; 
+        if (req.file) {
+            logo = `/uploads/${req.file.filename}`;
+        }
+
+        const resultado = await pool.query(
+            'UPDATE equipos SET nombre = $1, entrenador = $2, estadio = $3, temporada_id = $4, logo = $5 WHERE id = $6 RETURNING *',
+            [nombre, entrenador, estadio, temporada_id, logo, id]
+        );
 
         res.json({ mensaje: "Equipo actualizado", equipo: resultado.rows[0] });
     } catch (error) {
@@ -62,7 +98,7 @@ const actualizarEquipo = async (req, res) => {
     }
 };
 
-// ELIMINAR (DELETE)
+// ELIMINAR
 const eliminarEquipo = async (req, res) => {
     const { id } = req.params;
 

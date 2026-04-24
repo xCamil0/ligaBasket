@@ -6,7 +6,7 @@ import axios from 'axios';
 
 // --- COMPONENTES DE PÁGINAS ---
 
-// 1. TABLA DE POSICIONES
+// TABLA DE POSICIONES
 const TablaPosiciones = () => {
     const [tabla, setTabla] = useState([]);
     useEffect(() => {
@@ -19,7 +19,7 @@ const TablaPosiciones = () => {
 
     return (
         <div>
-            <h2>🏆 Tabla de Posiciones</h2>
+            <h2> Tabla </h2>
             <table border="1" style={{ width: '100%', textAlign: 'center', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr style={{ background: '#eee' }}>
@@ -30,7 +30,6 @@ const TablaPosiciones = () => {
                     {tabla.map((f) => (
                         <tr key={f.equipo}>
                             <td>{f.posicion}</td>
-                            {/* Link para ir al detalle del equipo */}
                             <td><Link to={`/equipos/${f.id_equipo || f.equipo}`}>{f.equipo}</Link></td>
                             <td>{f.puntos}</td><td>{f.pj}</td><td>{f.pg}</td><td>{f.pe}</td><td>{f.pp}</td><td>{f.tf}</td><td>{f.tc}</td><td>{f.dif}</td>
                         </tr>
@@ -41,10 +40,12 @@ const TablaPosiciones = () => {
     );
 };
 
-// 2. GESTIÓN DE EQUIPOS
+// GESTIÓN DE EQUIPOS
 const Equipos = () => {
     const [equipos, setEquipos] = useState([]);
     const [nuevo, setNuevo] = useState({ nombre: '', entrenador: '' });
+    const [mostrarFormEliminar, setMostrarFormEliminar] = useState(false);
+    const [datosEliminar, setDatosEliminar] = useState({ id: ''});
 
     const cargarEquipos = async () => {
         try {
@@ -77,33 +78,96 @@ const Equipos = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Si sale bien, limpiamos el formulario y refrescamos la lista
             setNuevo({ nombre: '', entrenador: '' });
             cargarEquipos();
             alert("Equipo creado con éxito");
+            window.location.reload();
+
         } catch (error) {
-            // Capturamos el error 400 que configuramos en el Backend
             alert(error.response?.data?.error || "Error al crear equipo");
         }
     };
+
+    const eliminarEquipo = async (e) => {
+    e.preventDefault(); // Evita que la página se recargue
+
+    const token = localStorage.getItem('token');
+
+    // Validación básica
+    if (!datosEliminar.id || !datosEliminar.nombre) {
+        alert("Debes completar ambos campos para eliminar");
+        return;
+    }
+
+    try {
+        // Enviamos el DELETE al ID que el usuario escribió
+        await axios.delete(`http://localhost:5000/api/equipos/${datosEliminar.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Si sale bien:
+        alert(`Equipo "${datosEliminar.nombre}" eliminado correctamente`);
+        setDatosEliminar({ id: '', nombre: '' }); // Limpiar campos
+        setMostrarFormEliminar(false); // Ocultar formulario
+        cargarEquipos(); // Refrescar lista
+    } catch (error) {
+        alert(error.response?.data?.error || "El ID no coincide o el equipo no existe");
+    }};
 
     useEffect(() => { cargarEquipos(); }, []);
 
     return (
         <div>
-            <h2>🏀 Gestión de Equipos</h2>
-            
-            {/* Formulario */}
+            <h2> Gestión de Equipos</h2>
                 {localStorage.getItem('token') ? (
-                    <form onSubmit={crearEquipo}>
-                        <input type="text" placeholder="Nombre del equipo" value={nuevo.nombre} onChange={(e) => setNuevo({...nuevo, nombre: e.target.value})} required />
-                        <input type="text" placeholder="Entrenador" value={nuevo.entrenador} onChange={(e) => setNuevo({...nuevo, entrenador: e.target.value})} required />
-                        <button type="submit">Agregar Equipo</button>
+                    <form onSubmit={crearEquipo} style={{ marginBottom: '20px' }}>
+                        <input 
+                            type="text" 
+                            placeholder="Nombre del equipo" 
+                            value={nuevo.nombre} 
+                            onChange={e => setNuevo({ ...nuevo, nombre: e.target.value })} 
+                            required
+                            style={{ padding: '8px', marginRight: '10px', width: '200px' }}
+                        />
+                        <input 
+                            type="text" 
+                            placeholder="Nombre del entrenador" 
+                            value={nuevo.entrenador} 
+                            onChange={e => setNuevo({ ...nuevo, entrenador: e.target.value })} 
+                            required
+                            style={{ padding: '8px', marginRight: '10px', width: '200px' }}
+                        />
+                        <button type="submit" style={{ padding: '8px 15px', background: '#2980b9', color: 'white', border: 'none', borderRadius: '4px' }}>
+                            Crear Equipo
+                        </button>
                     </form>
-                ) : (
-                    <p>ℹ️ Inicia sesión como admin para gestionar equipos.</p>
-                )}
+                ) : (<p>Inicia sesión para gestionar equipos</p>)}
+                    {/* Botón para abrir/cerrar el mini formulario */}
+                    {localStorage.getItem('token') && (
+                        <button 
+                            onClick={() => setMostrarFormEliminar(!mostrarFormEliminar)}
+                            style={{ marginTop: '10px', background: '#d9534f', color: 'white' , border: 'none', padding: '8px 15px', borderRadius: '4px' }}
+                        >
+                            {mostrarFormEliminar ? "Cancelar Eliminación" : "🗑️ Eliminar por ID"}
+                        </button>
+                    )}
 
+                    {/* Mini Formulario de Eliminación */}
+                    {mostrarFormEliminar && (
+                        <div style={{ margin: '15px 15px', padding: '15px', border: '2px solid red', borderRadius: '8px' }}>
+                            <h4>Confirmar Eliminación</h4>
+                            <form onSubmit={eliminarEquipo} style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                                <input 
+                                    type="number" 
+                                    placeholder="ID del equipo" 
+                                    value={datosEliminar.id} 
+                                    onChange={(e) => setDatosEliminar({...datosEliminar, id: e.target.value})} 
+                                    required 
+                                />
+                                <button type="submit" style={{ background: 'red', color: 'white' }}>Confirmar Borrado Permanente</button>
+                            </form>
+                        </div>
+                    )}      
             {/* Lista de equipos */}
             <ul>
                 {equipos.map(e => (
@@ -116,7 +180,7 @@ const Equipos = () => {
     );
 };
 
-// 3. DETALLE DE EQUIPO (LO NUEVO)
+// DETALLE DE EQUIPO
 const DetalleEquipo = () => {
     const { id } = useParams();
     const [datos, setDatos] = useState(null);
@@ -137,19 +201,19 @@ const DetalleEquipo = () => {
 
     return (
         <div>
-            <h1>🏀 {datos.equipo.nombre}</h1>
+            <h1>{datos.equipo.nombre}</h1>
             <p><strong>Entrenador:</strong> {datos.equipo.entrenador}</p>
             <hr />
-            <h3>👥 Plantilla</h3>
+            <h3>Plantilla</h3>
             <ul>{datos.jugadores.map(j => <li key={j.id}>{j.nombre_apellido}</li>)}</ul>
             
             <div style={{ display: 'flex', gap: '20px' }}>
                 <div style={{ flex: 1 }}>
-                    <h3>✅ Resultados</h3>
+                    <h3>Resultados</h3>
                     {datos.jugados.map(p => <div key={p.id}>{p.local} {p.puntos_local}-{p.puntos_visitante} {p.visitante}</div>)}
                 </div>
                 <div style={{ flex: 1 }}>
-                    <h3>⏳ Pendientes</h3>
+                    <h3>Pendientes</h3>
                     {datos.pendientes.map(p => <div key={p.id}>{p.local} vs {p.visitante}</div>)}
                 </div>
             </div>
@@ -157,7 +221,7 @@ const DetalleEquipo = () => {
     );
 };
 
-// 4. TABLA DE ANOTADORES (PICHICHI)
+// TABLA DE ANOTADORES (PICHICHI)
 const Pichichi = () => {
     const [anotadores, setAnotadores] = useState([]);
     useEffect(() => {
@@ -166,7 +230,7 @@ const Pichichi = () => {
 
     return (
         <div>
-            <h2>🔥 Top Anotadores (Pichichi)</h2>
+            <h2>Top Anotadores (Pichichi)</h2>
             <ol>
                 {anotadores.map(a => (
                     <li key={a.jugador}>{a.jugador} ({a.equipo}) - <strong>{a.total_puntos} pts</strong></li>
@@ -176,7 +240,7 @@ const Pichichi = () => {
     );
 };
 
-// 5. PARTIDOS (Igual que el tuyo)
+// PARTIDOS
 const Partidos = () => {
     const [partidos, setPartidos] = useState([]);
     const cargarPartidos = async () => {
@@ -187,7 +251,7 @@ const Partidos = () => {
 
     return (
         <div>
-            <h2>📅 Calendario</h2>
+            <h2>Calendario</h2>
             {partidos.map(p => (
                 <div key={p.id} style={{ border: '1px solid #ccc', margin: '5px', padding: '10px' }}>
                     {p.equipo_local} vs {p.equipo_visitante} {p.finalizado && <strong>({p.puntos_local}-{p.puntos_visitante})</strong>}
@@ -238,10 +302,10 @@ const Navbar = () => {
         }}>
             {/* LADO IZQUIERDO: Navegación pública */}
             <div style={{ display: 'flex', gap: '20px' }}>
-                <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🏆 Tabla</Link>
-                <Link to="/pichichi" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🔥 Pichichi</Link>
-                <Link to="/partidos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>📅 Partidos</Link>
-                <Link to="/equipos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>🏀 Equipos</Link>
+                <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Tabla</Link>
+                <Link to="/pichichi" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Pichichi</Link>
+                <Link to="/partidos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Calendario</Link>
+                <Link to="/equipos" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Equipos</Link>
             </div>
 
             {/* LADO DERECHO: Login / Logout */}
@@ -278,7 +342,7 @@ const Navbar = () => {
                             fontWeight: 'bold'
                         }}
                     >
-                        🔑 Entrar
+                        Entrar
                     </Link>
                 )}
             </div>
