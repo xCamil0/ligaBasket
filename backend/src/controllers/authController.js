@@ -64,7 +64,7 @@ const register = async (req, res) => {
     }
 };
 
-const users = async (req, res) => {
+const admin = async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM usuarios');
         res.json(result.rows);
@@ -74,4 +74,59 @@ const users = async (req, res) => {
     }
 };
 
-module.exports = { login, register, users};
+const eliminarAdmin = async (req, res) => {
+    const { id } = req.params;
+    try {
+
+        if (id === 1) {
+            return res.status(403).json({ error: "No se puede eliminar el usuario admin" });
+        }
+
+        if (id === req.user.id) {
+            return res.status(403).json({ error: "No se puede eliminar a sí mismo" });
+        }
+
+        if (id < 1) {
+            return res.status(400).json({ error: "ID de usuario no válido" });
+        }
+
+        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        res.json({ mensaje: "Usuario eliminado correctamente" });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error en el servidor al eliminar el usuario" });
+    }
+}
+
+const actualizarAdmin = async (req, res) => {
+    const { id } = req.params;
+    const { username, password } = req.body;
+
+    try {
+        if (id === 1) {
+            return res.status(403).json({ error: "No se puede actualizar el usuario admin" });
+        }
+
+        const existingUser = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
+        if (existingUser.rows.length === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const updatedUser = await pool.query(
+            'UPDATE usuarios SET username = $1, password = $2 WHERE id = $3 RETURNING *',
+            [username, hashedPassword, id]
+        );
+
+        res.json({ mensaje: "Usuario actualizado", usuario: updatedUser.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error en el servidor al actualizar el usuario" });
+    }
+};
+
+
+module.exports = { login, register, admin, eliminarAdmin, actualizarAdmin };

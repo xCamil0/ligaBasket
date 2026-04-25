@@ -1,5 +1,14 @@
 const pool = require('../config/db');
 
+const obtenerTodosLosPartidos = async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM partidos');
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener partidos" });
+    }
+};
 
 // Obtener todos los partidos con los nombres de los equipos
 const obtenerCalendarioFiltrado = async (req, res) => {
@@ -11,9 +20,9 @@ const obtenerCalendarioFiltrado = async (req, res) => {
             SELECT 
                 p.*, 
                 e1.nombre AS local, 
-                e1.logo_url AS logo_local,
+                e1.logo AS logo_local,
                 e2.nombre AS visitante, 
-                e2.logo_url AS logo_visitante
+                e2.logo AS logo_visitante
             FROM partidos p
             JOIN equipos e1 ON p.id_equipo_local = e1.id
             JOIN equipos e2 ON p.id_equipo_visitante = e2.id
@@ -38,10 +47,14 @@ const crearPartido = async (req, res) => {
             return res.status(400).json({ error: "Todos los campos son obligatorios" });
         }
 
-        const equipoLocal = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_local]);
+        const equipoLocal = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_equipo_local]);
         
         if (equipoLocal.rows.length === 0) {
             return res.status(404).json({ error: "El equipo local no existe" });
+        }
+        
+        if (id_equipo_local === id_equipo_visitante) {
+            return res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo" });
         }
 
         const lugarAutomatico = equipoLocal.rows[0].estadio || 'Estadio por definir';
@@ -50,13 +63,13 @@ const crearPartido = async (req, res) => {
             'INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar, temporada_id, finalizado) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [id_equipo_local, id_equipo_visitante, fecha, horario, lugarAutomatico, temporada_id, false]
         );
-        res.status(201).json({ mensaje: "Partido creado exitosamente", partido: nuevoPartido.rows[0] });
 
         if (nuevoPartido.rows.length > 0) {
             return res.status(400).json({ error: "Uno de los equipos ya tiene un partido programado en esa fecha y hora" });
         }
-    }
-        catch (error) {
+
+         res.status(201).json({ mensaje: "Partido creado", partido: nuevoPartido.rows[0] });
+     } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Error al crear el partido" });
         }
@@ -135,14 +148,16 @@ const finalizarPartido = async (req, res) => {
 
 const actualizarPartido = async (req, res) => {
     const { id } = req.params;
-    const { id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar } = req.body;
+    const { id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, temporada_id, jornada } = req.body;
     try {
         const resultado = await pool.query(
-            'UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, puntos_local = $3, puntos_visitante = $4, fecha = $5, horario = $6, lugar = $7 WHERE id = $8 RETURNING *',
-            [id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, id]
+            'UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, puntos_local = $3, puntos_visitante = $4, fecha = $5, horario = $6, lugar = $7, temporada_id = $8, jornada = $9 WHERE id = $10 RETURNING *',
+            [id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, temporada_id, jornada, id]
         );
+
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Partido no encontrado" });
         res.json({ mensaje: "Partido actualizado", partido: resultado.rows[0] });
+
     } catch (error) {
         res.status(500).json({ error: "Error al actualizar partido" });
     }
@@ -184,69 +199,22 @@ const listarPartidosPorTemporada = async (req, res) => {
         const result = await pool.query(
             `SELECT p.*, e1.nombre as local, e2.nombre as visitante 
              FROM partidos p
-             JOIN equipos e1 ON p.id_local = e1.id
-             JOIN equipos e2 ON p.id_visitante = e2.id
+             JOIN equipos e1 ON p.id_equipo_local = e1.id
+             JOIN equipos e2 ON p.id_equipo_visitante = e2.id
              WHERE p.temporada_id = $1
-             ORDER BY p.fecha DESC, p.hora DESC`,
+             ORDER BY p.fecha DESC, p.horario DESC`,
             [temporada_id]
         );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "No se encontraron partidos para esta temporada" });
+        }
+
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener historial" });
     }
 };
 
-const generarCalendario = async (req, res) => {
-    const { temporada_id, fecha_inicio } = req.body;
 
-    if (!temporada_id || !fecha_inicio)
-        return res.status(400).json({ error: "Debes especificar una temporada y una fecha de inicio" });
-
-    try {
-        // 1. Obtener todos los equipos de esa temporada
-        const equiposRes = await pool.query(
-            'SELECT id, estadio FROM equipos WHERE temporada_id = $1', 
-            [temporada_id]
-        );
-        const equipos = equiposRes.rows;
-
-        if (equipos.length < 2) return res.status(400).json({ error: "Mínimo 2 equipos" });
-
-        // 2. Limpiar partidos NO finalizados antes de re-generar
-        await pool.query(
-            'DELETE FROM partidos WHERE temporada_id = $1 AND finalizado = false', 
-            [temporada_id]
-        );
-
-        // 3. Algoritmo para cruces (Todos contra todos)
-        let partidosCreados = [];
-        let jornadaActual = 1;
-
-        for (let i = 0; i < equipos.length; i++) {
-            for (let j = i + 1; j < equipos.length; j++) {
-                const local = equipos[i];
-                const visitante = equipos[j];
-
-                const nuevoPartido = await pool.query(
-                    `INSERT INTO partidos 
-                    (id_equipo_local, id_equipo_visitante, lugar, temporada_id, jornada, finalizado, fecha, horario) 
-                    VALUES ($1, $2, $3, $4, $5, false, $6, '20:00') RETURNING *`,
-                    [local.id, visitante.id, local.estadio, temporada_id, jornadaActual, fecha_inicio]
-                );
-                
-                partidosCreados.push(nuevoPartido.rows[0]);
-                // Esto es una lógica simple: cada 2 partidos subimos la jornada
-                if (partidosCreados.length % Math.floor(equipos.length / 2) === 0) {
-                    jornadaActual++;
-                }
-            }
-        }
-
-        res.json({ mensaje: "Calendario generado", jornadas: jornadaActual - 1 });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al generar calendario" });
-    }
-};
-
-module.exports = { obtenerCalendarioFiltrado, crearPartido, finalizarPartido, actualizarPartido, eliminarPartido, obtenerJugadoresDelPartido, listarPartidosPorTemporada, generarCalendario};
+module.exports = {obtenerTodosLosPartidos, obtenerCalendarioFiltrado, crearPartido, finalizarPartido, actualizarPartido, eliminarPartido, obtenerJugadoresDelPartido, listarPartidosPorTemporada};
