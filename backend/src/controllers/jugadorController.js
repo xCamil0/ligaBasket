@@ -85,4 +85,25 @@ const obtenerAgentesLibres = async (req, res) => {
     }
 };
 
-module.exports = { obtenerJugadoresPorEquipo, crearJugador, actualizarJugador, eliminarJugador, obtenerTodosLosJugadores, obtenerAgentesLibres };
+const obtenerTrayectoriaJugador = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const query = `
+            SELECT 
+                e.nombre AS equipo, 
+                t.nombre AS temporada, 
+                hf.fecha_fichaje
+            FROM historial_fichajes hf
+            JOIN equipos e ON hf.equipo_id = e.id
+            JOIN temporadas t ON hf.temporada_id = t.id
+            WHERE hf.jugador_id = $1
+            ORDER BY hf.fecha_fichaje DESC
+        `;
+        const result = await pool.query(query, [id]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener historial" });
+    }
+};
+
+module.exports = { obtenerJugadoresPorEquipo, crearJugador, actualizarJugador, eliminarJugador, obtenerTodosLosJugadores, obtenerAgentesLibres, obtenerTrayectoriaJugador };

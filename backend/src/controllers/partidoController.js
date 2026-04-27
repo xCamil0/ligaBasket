@@ -26,7 +26,7 @@ const obtenerCalendarioFiltrado = async (req, res) => {
             FROM partidos p
             JOIN equipos e1 ON p.id_equipo_local = e1.id
             JOIN equipos e2 ON p.id_equipo_visitante = e2.id
-            WHERE p.temporada_id = $1 AND p.jornada = $2
+            WHERE temporada_id = $1 AND p.jornada = $2
             ORDER BY p.fecha ASC, p.horario ASC
         `;
         
@@ -128,8 +128,8 @@ const finalizarPartido = async (req, res) => {
         if (anotaciones && anotaciones.length > 0) {
             for (let nota of anotaciones) {
                 await client.query(
-                    'INSERT INTO anotaciones (id_partido, id_jugador, puntos_anotados) VALUES ($1, $2, $3)',
-                    [id, nota.jugador_id, nota.puntos]
+                    'INSERT INTO anotaciones (id_partido, id_jugador, temporada_id, puntos_anotados) VALUES ($1, $2, $3, $4)',
+                    [id, nota.jugador_id, partido.temporada_id, nota.puntos]
                 );
             }
         }

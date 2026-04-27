@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 
 const generarCalendario = async (req, res) => {
-    const { temporada_id } = req.body;
+    const { temporada_id} = req.body;
 
     try {
         // 1. Obtener equipos Y las fechas de la temporada
@@ -11,7 +11,7 @@ const generarCalendario = async (req, res) => {
         );
         
         const equiposRes = await pool.query(
-            'SELECT id, estadio FROM equipos WHERE temporada_id = $1',
+            'SELECT e.id, e.estadio FROM equipos e JOIN temporada_equipos te ON e.id = te.equipo_id WHERE te.temporada_id = $1',
             [temporada_id]
         );
 

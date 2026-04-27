@@ -24,5 +24,7 @@ router.post('/', auth.verificarToken, upload.single('foto'), equipoController.cr
 router.delete('/:id', auth.verificarToken, equipoController.eliminarEquipo);
 router.put('/:id', auth.verificarToken, upload.single('foto'), equipoController.actualizarEquipo);
 router.get('/:id/detalle', equipoController.obtenerDetalleEquipo);
+router.post('/fichar', auth.verificarToken, equipoController.gestionarFichajeOLiberacion);
+router.get('/por-temporada', equipoController.obtenerEquiposPorTemporada);
 
 module.exports = router;

@@ -153,4 +153,84 @@ const obtenerDetalleEquipo = async (req, res) => {
     }
 };
 
-module.exports = { obtenerEquipos, crearEquipo, eliminarEquipo, actualizarEquipo, obtenerDetalleEquipo };
+const obtenerEquiposPorTemporada = async (req, res) => {
+    // Usamos req.query para seguir tu estándar de ?temporada_id=X
+    const { temporada_id } = req.query;
+
+    if (!temporada_id) {
+        return res.status(400).json({ error: "Debes proporcionar el temporada_id" });
+    }
+
+    try {
+        const query = `
+            SELECT 
+                e.id, 
+                e.nombre, 
+                e.logo, 
+                e.estadio,
+                te.puntos_totales -- Por si quieres mostrar los puntos actuales en la lista
+            FROM equipos e
+            JOIN temporada_equipos te ON e.id = te.equipo_id
+            WHERE te.temporada_id = $1
+            ORDER BY e.nombre ASC
+        `;
+        
+        const result = await pool.query(query, [temporada_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(200).json({ 
+                mensaje: "No hay equipos inscritos en esta temporada", 
+                data: [] 
+            });
+        }
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error al obtener equipos de la temporada:", error.message);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+};
+
+const gestionarFichajeOLiberacion = async (req, res) => {
+    // Si equipo_id es null, el jugador pasa a ser Agente Libre
+    const { jugador_id, equipo_id, temporada_id } = req.body;
+
+    try {
+        await pool.query('BEGIN');
+
+        // 1. Desactivamos el estado actual anterior
+        await pool.query(
+            'UPDATE historial_fichajes SET es_actual = false WHERE jugador_id = $1',
+            [jugador_id]
+        );
+
+        // 2. Insertamos el nuevo registro (si equipo_id es null, queda como Agente Libre)
+        await pool.query(
+            `INSERT INTO historial_fichajes (jugador_id, equipo_id, temporada_id, es_actual) 
+             VALUES ($1, $2, $3, true)`,
+            [jugador_id, equipo_id, temporada_id]
+        );
+
+        // 3. Actualizamos la tabla principal de jugadores
+        // Si equipo_id es null, el jugador queda sin equipo en su perfil
+        await pool.query(
+            'UPDATE jugadores SET equipo_id = $1 WHERE id = $2',
+            [equipo_id, jugador_id]
+        );
+
+        await pool.query('COMMIT');
+        
+        const mensaje = equipo_id 
+            ? "Fichaje realizado con éxito" 
+            : "El jugador ahora es Agente Libre";
+            
+        res.json({ mensaje });
+
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error(error);
+        res.status(500).json({ error: "Error al procesar el movimiento" });
+    }
+};
+
+module.exports = { obtenerEquipos, crearEquipo, eliminarEquipo, actualizarEquipo, obtenerDetalleEquipo, gestionarFichajeOLiberacion, obtenerEquiposPorTemporada };

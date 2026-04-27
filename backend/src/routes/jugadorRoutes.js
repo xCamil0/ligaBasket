@@ -9,5 +9,6 @@ router.put('/:id', auth.verificarToken, jugadorController.actualizarJugador);
 router.delete('/:id', auth.verificarToken, jugadorController.eliminarJugador);
 router.get('/', auth.verificarToken, jugadorController.obtenerTodosLosJugadores);
 router.get('/agentes-libres', auth.verificarToken, jugadorController.obtenerAgentesLibres);
+router.get('/:id/trayectoria', auth.verificarToken, jugadorController.obtenerTrayectoriaJugador);
 
 module.exports = router;
