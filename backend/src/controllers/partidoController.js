@@ -41,39 +41,86 @@ const obtenerCalendarioFiltrado = async (req, res) => {
 // Registrar un nuevo partido
 const crearPartido = async (req, res) => {
     const { id_equipo_local, id_equipo_visitante, fecha, horario, temporada_id } = req.body;
+
     try {
+        let temporadaParaRegistrar;
 
-        if (!id_equipo_local || !id_equipo_visitante || !fecha || !horario || !temporada_id) {
-            return res.status(400).json({ error: "Todos los campos son obligatorios" });
+        // 1. Lógica de Selección de Temporada
+        if (temporada_id) {
+            // Si el admin envía ID, usamos ese estrictamente
+            const resTemp = await pool.query('SELECT id, fecha_inicio, fecha_fin FROM temporadas WHERE id = $1', [temporada_id]);
+            if (resTemp.rows.length === 0) {
+                return res.status(404).json({ error: "La temporada manual enviada no existe." });
+            }
+            temporadaParaRegistrar = resTemp.rows[0];
+        } else {
+            // Si no envía ID, buscamos la actual
+            const resActual = await pool.query('SELECT id, fecha_inicio, fecha_fin FROM temporadas WHERE actual = true LIMIT 1');
+            if (resActual.rows.length === 0) {
+                return res.status(400).json({ error: "No enviaste temporada_id y no hay ninguna temporada marcada como 'Actual'." });
+            }
+            temporadaParaRegistrar = resActual.rows[0];
         }
 
-        const equipoLocal = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_equipo_local]);
-        
-        if (equipoLocal.rows.length === 0) {
-            return res.status(404).json({ error: "El equipo local no existe" });
-        }
-        
-        if (id_equipo_local === id_equipo_visitante) {
-            return res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo" });
+        const tempId = temporadaParaRegistrar.id;
+        console.log(`Intentando registrar partido en Temporada ID: ${tempId}`);
+
+        // 2. Validación de Rango de Fecha (Comparación de strings para evitar líos de zona horaria)
+        // SQL suele devolver YYYY-MM-DD, el 'fecha' del body también debería ser YYYY-MM-DD
+        if (fecha < temporadaParaRegistrar.fecha_inicio || fecha > temporadaParaRegistrar.fecha_fin) {
+            return res.status(400).json({ 
+                error: `La fecha ${fecha} está fuera del rango de esta temporada.`,
+                rango: `${temporadaParaRegistrar.fecha_inicio} a ${temporadaParaRegistrar.fecha_fin}`
+            });
         }
 
-        const lugarAutomatico = equipoLocal.rows[0].estadio || 'Estadio por definir';
-
-        const nuevoPartido = await pool.query(
-            'INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar, temporada_id, finalizado) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [id_equipo_local, id_equipo_visitante, fecha, horario, lugarAutomatico, temporada_id, false]
+        // 3. Verificar si los equipos están inscritos en ESA temporada específica
+        // IMPORTANTE: Debes tener registros en la tabla 'temporada_equipos' para estos IDs
+        const inscripcion = await pool.query(
+            `SELECT equipo_id FROM temporada_equipos 
+             WHERE temporada_id = $1 AND equipo_id IN ($2, $3)`,
+            [tempId, id_equipo_local, id_equipo_visitante]
         );
 
-        if (nuevoPartido.rows.length > 0) {
-            return res.status(400).json({ error: "Uno de los equipos ya tiene un partido programado en esa fecha y hora" });
+        if (inscripcion.rows.length < 2) {
+            console.log("Error: Equipos encontrados en la tabla:", inscripcion.rows);
+            return res.status(400).json({ 
+                error: "Uno o ambos equipos no están inscritos en la temporada seleccionada.",
+                ayuda: "Asegúrate de haber usado la función de 'Asignar Equipos' para esta temporada primero."
+            });
         }
 
-         res.status(201).json({ mensaje: "Partido creado", partido: nuevoPartido.rows[0] });
-     } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: "Error al crear el partido" });
+        // 4. Verificar Choque de Horarios
+        const choque = await pool.query(
+            `SELECT id FROM partidos WHERE fecha = $1 AND horario = $2 
+             AND (id_equipo_local IN ($3, $4) OR id_equipo_visitante IN ($3, $4))`,
+            [fecha, horario, id_equipo_local, id_equipo_visitante]
+        );
+
+        if (choque.rows.length > 0) {
+            return res.status(400).json({ error: "Conflicto de horario: uno de los equipos ya juega a esa hora." });
         }
 
+        // 5. Obtener Estadio del Local
+        const localData = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_equipo_local]);
+        const estadio = localData.rows[0]?.estadio || 'Estadio por definir';
+
+        // 6. Inserción Final
+        const nuevoPartido = await pool.query(
+            `INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar, temporada_id, finalizado) 
+             VALUES ($1, $2, $3, $4, $5, $6, false) RETURNING *`,
+            [id_equipo_local, id_equipo_visitante, fecha, horario, estadio, tempId]
+        );
+
+        res.status(201).json({ 
+            mensaje: "Partido creado con éxito", 
+            partido: nuevoPartido.rows[0] 
+        });
+
+    } catch (error) {
+        console.error("ERROR CRÍTICO EN CREAR PARTIDO:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
 };
 
 const finalizarPartido = async (req, res) => {

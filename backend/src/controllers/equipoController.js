@@ -17,49 +17,34 @@ const obtenerEquipos = async (req, res) => {
 
 const crearEquipo = async (req, res) => {
     const { nombre, entrenador, estadio, temporada_id, logo} = req.body;
-
     let logoPath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (!nombre || nombre.length < 3) {
-        return res.status(400).json({ 
-            error: "El nombre del equipo es obligatorio y debe tener al menos 3 caracteres" 
-        });
-    }
-    if (!entrenador || entrenador.length < 3) {
-        return res.status(400).json({ 
-            error: "El nombre del entrenador es obligatorio y debe tener al menos 3 caracteres" 
-        });
-    }
-    if (!estadio || estadio.length < 3) {
-        return res.status(400).json({ 
-            error: "El nombre del estadio es obligatorio y debe tener al menos 3 caracteres" 
-        });
+    const validar = (campo, nombre) => !campo || campo.length < 3;
+
+    if (validar(nombre) || validar(entrenador) || validar(estadio) || !temporada_id) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: "Todos los campos son obligatorios (min. 3 caracteres)" });
     }
 
     try {
-
-        if (!nombre || !entrenador || !estadio || !temporada_id) {
-            if (req.file) {
-                fs.unlinkSync(req.file.path); // Eliminar el archivo subido si hay un error de validación
-            }
-            return res.status(400).json({ error: "Todos los campos son obligatorios" });
-        }
-
         const tempExiste = await pool.query('SELECT id FROM temporadas WHERE id = $1', [temporada_id]);
         if (tempExiste.rows.length === 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
             return res.status(400).json({ error: "La temporada especificada no existe" });
         }
 
-        const existe = await pool.query('SELECT id FROM equipos WHERE nombre ILIKE $1', [nombre]);
-        if (existe.rows.length > 0) {
-            return res.status(400).json({ error: "Ya existe un equipo con ese nombre en la temporada especificada" });
-        }
-        
-       let equipoId;
+        const existe = await pool.query('SELECT id FROM equipos WHERE nombre ILIKE $1', [nombre]);   
+        let equipoId;
 
         if (existe.rows.length > 0) {
-            // EL EQUIPO YA EXISTE EN LA DB GLOBAL
+
             equipoId = existe.rows[0].id;
+            const equipoActivo = existe.rows[0].activo;
+            if (!equipoActivo) {
+                await pool.query('UPDATE equipos SET activo = true, entrenador = $1, estadio = $2, logo = COALESCE($3, logo) WHERE id = $4', 
+                    [entrenador, estadio, logoPath, equipoId]
+                );
+            }
 
             // 3. VERIFICACIÓN: ¿Este equipo ya está inscrito en ESTA temporada?
             const relacion = await pool.query(
@@ -72,8 +57,6 @@ const crearEquipo = async (req, res) => {
                 return res.status(400).json({ error: "Este equipo ya está inscrito en esta temporada." });
             }
 
-            // Si el equipo existe pero no en esta temporada, no creamos equipo nuevo, 
-            // solo saltamos al paso de vinculación.
         } else {
             // EL EQUIPO ES NUEVO: Lo creamos
             const nuevoEquipo = await pool.query(
@@ -102,7 +85,7 @@ const crearEquipo = async (req, res) => {
                 if (err) {
                     console.error("Error al eliminar el archivo:", err);
                 }
-            }); // Eliminar el archivo subido si hay un error en la base de datos
+            });
         }
         res.status(500).json({ error: "No se pudo guardar el equipo" });
     }
@@ -295,4 +278,4 @@ const gestionarFichajeOLiberacion = async (req, res) => {
     }
 };
 
-module.exports = { obtenerEquipos, crearEquipo, eliminarEquipo, actualizarEquipo, obtenerDetalleEquipo, gestionarFichajeOLiberacion, obtenerEquiposPorTemporada };
+module.exports = { obtenerEquipos, crearEquipo, eliminarEquipo, actualizarEquipo, obtenerDetalleEquipo, gestionarFichajeOLiberacion, obtenerEquiposPorTemporada};

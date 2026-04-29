@@ -81,4 +81,50 @@ const actual = async (req, res) => {
     }
 };
 
-module.exports = { listar, crear, eliminar, actualizar, actual};
+const asignarEquipos = async (req, res) => {
+    const { temporada_id, equipos_ids } = req.body; // equipos_ids debe ser un Array: [1, 5, 8]
+
+    if (!temporada_id || !Array.isArray(equipos_ids) || equipos_ids.length === 0) {
+        return res.status(400).json({ error: "Debes enviar la temporada y una lista de equipos." });
+    }
+
+    try {
+        await pool.query('BEGIN'); // Iniciamos transacción
+
+        // Generamos las inserciones para cada equipo
+        const consultas = equipos_ids.map(equipo_id => {
+            return pool.query(
+                'INSERT INTO temporada_equipos (temporada_id, equipo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                [temporada_id, equipo_id]
+            );
+        });
+
+        await Promise.all(consultas);
+        await pool.query('COMMIT');
+
+        res.json({ mensaje: `${equipos_ids.length} equipos asignados correctamente a la temporada.` });
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error(error);
+        res.status(500).json({ error: "Error al asignar los equipos." });
+    }
+};
+
+const obtenerEquipos = async (req, res) => {
+    const { temporada_id } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT e.id, e.nombre, e.logo, e.estadio, te.puntos_totales
+             FROM equipos e
+             JOIN temporada_equipos te ON e.id = te.equipo_id
+             WHERE te.temporada_id = $1 AND e.activo = true
+             ORDER BY e.nombre ASC`,
+            [temporada_id]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener equipos" });
+    }
+};
+
+module.exports = { listar, crear, eliminar, actualizar, actual, asignarEquipos, obtenerEquipos };
