@@ -94,7 +94,7 @@ const obtenerTrayectoriaJugador = async (req, res) => {
                 t.nombre AS temporada, 
                 hf.fecha_fichaje
             FROM historial_fichajes hf
-            JOIN equipos e ON hf.equipo_id = e.id
+            JOIN equipos e ON hf.equipo_id = e.id 
             JOIN temporadas t ON hf.temporada_id = t.id
             WHERE hf.jugador_id = $1
             ORDER BY hf.fecha_fichaje DESC

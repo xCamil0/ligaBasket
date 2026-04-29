@@ -24,11 +24,14 @@ const crear = async (req, res) => {
 const eliminar = async (req, res) => {
     const { id } = req.params;
     try {
+        const resultado = await pool.query('SELECT id FROM temporadas WHERE id = $1', [id]);
+        if (resultado.rows.length === 0) {
+            return res.status(404).json({ error: "Temporada no encontrada" });
+        }
         await pool.query('DELETE FROM partidos WHERE temporada_id = $1', [id]);
-
-        await pool.query('DELETE FROM equipos WHERE temporada_id = $1', [id]);
-
+        await pool.query('DELETE FROM temporada_equipos WHERE temporada_id = $1', [id]);
         await pool.query('DELETE FROM temporadas WHERE id = $1', [id]);
+        
         res.json({ message: 'Temporada eliminada correctamente' });
     } catch (error) {
         console.error('Error al eliminar temporada:', error);
@@ -48,5 +51,34 @@ const actualizar = async (req, res) => {
     }
 };
 
+const actual = async (req, res) => {
+    const { id } = req.params;
 
-module.exports = { listar, crear, eliminar, actualizar };
+    try {
+        // INICIO DE UNA TRANSACCIÓN (Para que se hagan ambos cambios o ninguno)
+        await pool.query('BEGIN');
+
+        // Paso A: Ponemos TODAS las temporadas en actual = false
+        await pool.query('UPDATE temporadas SET actual = false');
+
+        // Paso B: Ponemos la seleccionada en actual = true
+        const resultado = await pool.query(
+            'UPDATE temporadas SET actual = true WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        await pool.query('COMMIT');
+
+        if (resultado.rows.length === 0) {
+            return res.status(404).json({ error: "Temporada no encontrada" });
+        }
+
+        res.json({ mensaje: "Temporada actual actualizada", temporada: resultado.rows[0] });
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error(error);
+        res.status(500).json({ error: "Error al definir temporada actual" });
+    }
+};
+
+module.exports = { listar, crear, eliminar, actualizar, actual};

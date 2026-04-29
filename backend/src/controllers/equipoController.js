@@ -1,9 +1,11 @@
 const pool = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 
 const obtenerEquipos = async (req, res) => {
     try {
         // Hacemos la consulta SQL real
-        const resultado = await pool.query('SELECT * FROM equipos');
+        const resultado = await pool.query('SELECT * FROM equipos WHERE activo = true ORDER BY nombre ASC');
         
         // Enviamos los datos de vuelta a Postman
         res.status(200).json(resultado.rows);
@@ -15,6 +17,8 @@ const obtenerEquipos = async (req, res) => {
 
 const crearEquipo = async (req, res) => {
     const { nombre, entrenador, estadio, temporada_id, logo} = req.body;
+
+    let logoPath = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (!nombre || nombre.length < 3) {
         return res.status(400).json({ 
@@ -31,41 +35,75 @@ const crearEquipo = async (req, res) => {
             error: "El nombre del estadio es obligatorio y debe tener al menos 3 caracteres" 
         });
     }
-    if (!temporada_id) {
-        return res.status(400).json({ 
-            error: "Debes especificar una temporada" 
-        });
-    }
 
     try {
-        const tempExiste = await pool.query('SELECT * FROM temporadas WHERE id = $1', [temporada_id]);
+
+        if (!nombre || !entrenador || !estadio || !temporada_id) {
+            if (req.file) {
+                fs.unlinkSync(req.file.path); // Eliminar el archivo subido si hay un error de validación
+            }
+            return res.status(400).json({ error: "Todos los campos son obligatorios" });
+        }
+
+        const tempExiste = await pool.query('SELECT id FROM temporadas WHERE id = $1', [temporada_id]);
         if (tempExiste.rows.length === 0) {
             return res.status(400).json({ error: "La temporada especificada no existe" });
         }
 
-        const existe = await pool.query('SELECT * FROM equipos WHERE nombre = $1 AND temporada_id = $2', [nombre, temporada_id]);
+        const existe = await pool.query('SELECT id FROM equipos WHERE nombre ILIKE $1', [nombre]);
         if (existe.rows.length > 0) {
             return res.status(400).json({ error: "Ya existe un equipo con ese nombre en la temporada especificada" });
         }
-
-        let logo = '/uploads/default_logo.png'; // Ruta por defecto
-        if (req.file) {
-        logo = `/uploads/${req.file.filename}`;
-        }
         
-        const nuevoEquipo = await pool.query(
-            'INSERT INTO equipos (nombre, entrenador, puntos_totales, estadio, logo, temporada_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [nombre, entrenador, 0, estadio, logo, temporada_id]
+       let equipoId;
+
+        if (existe.rows.length > 0) {
+            // EL EQUIPO YA EXISTE EN LA DB GLOBAL
+            equipoId = existe.rows[0].id;
+
+            // 3. VERIFICACIÓN: ¿Este equipo ya está inscrito en ESTA temporada?
+            const relacion = await pool.query(
+                'SELECT * FROM temporada_equipos WHERE equipo_id = $1 AND temporada_id = $2',
+                [equipoId, temporada_id]
+            );
+
+            if (relacion.rows.length > 0) {
+                if (req.file) fs.unlinkSync(req.file.path);
+                return res.status(400).json({ error: "Este equipo ya está inscrito en esta temporada." });
+            }
+
+            // Si el equipo existe pero no en esta temporada, no creamos equipo nuevo, 
+            // solo saltamos al paso de vinculación.
+        } else {
+            // EL EQUIPO ES NUEVO: Lo creamos
+            const nuevoEquipo = await pool.query(
+                'INSERT INTO equipos (nombre, entrenador, estadio, logo) VALUES ($1, $2, $3, $4) RETURNING id',
+                [nombre, entrenador, estadio, logoPath]
+            );
+            equipoId = nuevoEquipo.rows[0].id;
+        }
+
+        // 4. VINCULACIÓN FINAL
+        await pool.query(
+            'INSERT INTO temporada_equipos (equipo_id, temporada_id) VALUES ($1, $2)',
+            [equipoId, temporada_id]
         );
         
         // Respondemos con el equipo recién creado
         res.status(201).json({
-            mensaje: "Equipo creado exitosamente",
-            equipo: nuevoEquipo.rows[0]
+            mensaje: "Equipo creado exitosamente", equipoId
         });
 
     } catch (error) {
         console.error("Error al crear equipo:", error);
+
+        if (req.file) {
+            fs.unlink(req.file.path, (err) => {
+                if (err) {
+                    console.error("Error al eliminar el archivo:", err);
+                }
+            }); // Eliminar el archivo subido si hay un error en la base de datos
+        }
         res.status(500).json({ error: "No se pudo guardar el equipo" });
     }
 };
@@ -81,15 +119,23 @@ const actualizarEquipo = async (req, res) => {
             return res.status(404).json({ error: "Equipo no encontrado" });
         }
 
-        let logo = equipoActual.rows[0].foto; 
+        let logof = equipoActual.rows[0].logo;
         if (req.file) {
-            logo = `/uploads/${req.file.filename}`;
+            logof = `/uploads/${req.file.filename}`;
         }
 
         const resultado = await pool.query(
-            'UPDATE equipos SET nombre = $1, entrenador = $2, estadio = $3, temporada_id = $4, logo = $5 WHERE id = $6 RETURNING *',
-            [nombre, entrenador, estadio, temporada_id, logo, id]
+            'UPDATE equipos e SET nombre = $1, entrenador = $2, estadio = $3, logo = $4 WHERE id = $5 RETURNING *',
+            [nombre, entrenador, estadio, logof, id]
         );
+
+        if (temporada_id) {
+            await pool.query(`INSERT INTO temporada_equipos (equipo_id, temporada_id) 
+                 VALUES ($1, $2) 
+                 ON CONFLICT (equipo_id, temporada_id) DO NOTHING`,
+                [id, temporada_id]
+            );
+        }
 
         res.json({ mensaje: "Equipo actualizado", equipo: resultado.rows[0] });
     } catch (error) {
@@ -103,16 +149,33 @@ const eliminarEquipo = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const resultado = await pool.query('DELETE FROM equipos WHERE id = $1 RETURNING *', [id]);
+        // En lugar de borrar, cambiamos el estado a false
+        const resultado = await pool.query(
+            'UPDATE equipos SET activo = false WHERE id = $1 RETURNING nombre',
+            [id]
+        );
+        
+        const tempRes = await pool.query('SELECT id FROM temporadas WHERE actual = true LIMIT 1');
+        const temporada_actual_id = tempRes.rows[0]?.id;
+
+        if (temporada_actual_id) {
+            await pool.query(
+                'DELETE FROM temporada_equipos WHERE equipo_id = $1 AND temporada_id = $2', 
+                [id, temporada_actual_id]
+            );
+        }
+        await pool.query('UPDATE jugadores SET equipo_id = NULL WHERE equipo_id = $1', [id]);
 
         if (resultado.rows.length === 0) {
-            return res.status(404).json({ error: "El equipo no existe" });
+            return res.status(404).json({ error: "Equipo no encontrado" });
         }
 
-        res.json({ mensaje: "Equipo eliminado correctamente" });
+        res.json({ 
+            mensaje: `El equipo ${resultado.rows[0].nombre} ha sido desactivado.` 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al eliminar" });
+        res.status(500).json({ error: "Error al procesar la baja del equipo" });
     }
 };
 
@@ -127,10 +190,9 @@ const obtenerDetalleEquipo = async (req, res) => {
         const jugadoresRes = await pool.query('SELECT * FROM jugadores WHERE equipo_id = $1', [id]);
 
         // 3. Partidos (Jugados y Pendientes)
-        // Usamos una sola consulta para traer todos y luego filtramos en JS o lo hacemos por separado
         const partidosRes = await pool.query(`
             SELECT p.*, 
-                   el.nombre AS local, ev.nombre AS visitante
+            el.nombre AS local, ev.nombre AS visitante
             FROM partidos p
             JOIN equipos el ON p.id_equipo_local = el.id
             JOIN equipos ev ON p.id_equipo_visitante = ev.id
@@ -168,10 +230,10 @@ const obtenerEquiposPorTemporada = async (req, res) => {
                 e.nombre, 
                 e.logo, 
                 e.estadio,
-                te.puntos_totales -- Por si quieres mostrar los puntos actuales en la lista
+                te.puntos_totales
             FROM equipos e
             JOIN temporada_equipos te ON e.id = te.equipo_id
-            WHERE te.temporada_id = $1
+            WHERE te.temporada_id = $1 AND e.activo = true
             ORDER BY e.nombre ASC
         `;
         

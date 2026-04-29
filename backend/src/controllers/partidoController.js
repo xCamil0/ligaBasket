@@ -114,12 +114,12 @@ const finalizarPartido = async (req, res) => {
         //Sumar puntos al equipo ganador
         if (idGanador) {
             await client.query(
-                'UPDATE equipos SET puntos_totales = puntos_totales + 3 WHERE id = $1',
+                'UPDATE temporada_equipos SET puntos_totales = puntos_totales + 3 WHERE id = $1',
                 [idGanador]
             );
         } else {
             await client.query(
-                'UPDATE equipos SET puntos_totales = puntos_totales + 1 WHERE id IN ($1, $2)',
+                'UPDATE temporada_equipos SET puntos_totales = puntos_totales + 1 WHERE id IN ($1, $2)',
                 [partido.id_equipo_local, partido.id_equipo_visitante]
             );
         }
