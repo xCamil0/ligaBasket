@@ -173,6 +173,26 @@ const finalizarPartido = async (req, res) => {
 
         //Guardar puntos individuales de los jugadores (Pichichi)
         if (anotaciones && anotaciones.length > 0) {
+    // 1. Separar anotaciones por equipo para validar
+            const anotacionesLocal = anotaciones.filter(n => n.equipo_id === partido.id_equipo_local);
+            const anotacionesVisitante = anotaciones.filter(n => n.equipo_id === partido.id_equipo_visitante);
+
+            const sumaLocal = anotacionesLocal.reduce((sum, n) => sum + n.puntos_local, 0);
+            const sumaVisitante = anotacionesVisitante.reduce((sum, n) => sum + n.puntos_visitante, 0);
+
+            // 2. Validar que la suma coincida con el marcador final del partido
+            if (sumaLocal !== puntos_local || sumaVisitante !== puntos_visitante) {
+                // Si no coinciden, lanzamos un error y detenemos todo
+                return res.status(400).json({ 
+                    error: "La suma de puntos de los jugadores no coincide con el marcador final.",
+                    detalles: { local: sumaLocal, esperado_local: puntos_local, visitante: sumaVisitante, esperado_visitante: puntos_visitante }
+                });
+            }
+
+            // 3. Limpiar anotaciones previas de este partido (Evita duplicados si se edita el resultado)
+            await client.query('DELETE FROM anotaciones WHERE id_partido = $1', [id]);
+
+            // 4. Insertar las nuevas anotaciones
             for (let nota of anotaciones) {
                 await client.query(
                     'INSERT INTO anotaciones (id_partido, id_jugador, temporada_id, puntos_anotados) VALUES ($1, $2, $3, $4)',

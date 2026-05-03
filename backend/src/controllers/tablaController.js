@@ -41,13 +41,13 @@ const obtenerTabla = async (req, res) => {
 
                     -- PC: puntos en Contra (Puntos recibidos)
                     SUM(CASE 
-                        WHEN p.id_equipo_local = e.id THEN COALESCE(p.puntos_visitante, 0)
+                        WHEN p.id_equipo_local = e.id THEN COALESCE(p.puntos_visitante, 0) 
                         WHEN p.id_equipo_visitante = e.id THEN COALESCE(p.puntos_local, 0)
                         ELSE 0 END) as pc
 
                 FROM equipos e
                 JOIN temporada_equipos te ON e.id = te.equipo_id
-                LEFT JOIN partidos p ON (e.id = p.id_equipo_local OR e.id = p.id_equipo_visitante)
+                LEFT JOIN partidos p ON (e.id = p.id_equipo_local OR e.id = p.id_equipo_visitante) AND p.temporada_id = $1 AND p.finalizado = true
                 WHERE te.temporada_id = $1
                 GROUP BY e.id, e.nombre, e.logo
             )
