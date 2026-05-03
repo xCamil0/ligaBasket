@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 const verificarToken = (req, res, next) => {
     const authHeader = req.header('Authorization');
-    const SECRET_KEY = 'Cam1016012448*';
+    const SECRET_KEY = process.env.JWT_SECRET;
     if (!authHeader) return res.status(403).json({ error: "Acceso denegado" });
 
     // Extraer el token del formato "Bearer TOKEN_AQUI"
@@ -19,4 +19,13 @@ const verificarToken = (req, res, next) => {
     }
 };
 
-module.exports = verificarToken;
+const crearToken = (usuario) => {
+    const SECRET_KEY = process.env.JWT_SECRET;
+    const payload = {
+        id: usuario.id,
+        username: usuario.username
+    };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '2h' });
+};
+
+module.exports = { verificarToken, crearToken };

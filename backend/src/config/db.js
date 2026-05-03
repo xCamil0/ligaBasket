@@ -12,9 +12,9 @@ const pool = new Pool({
 // Verificación de conexión
 pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error('❌ Error conectando a la DB:', err.stack);
+        console.error(' Error conectando a la DB:', err.stack);
     } else {
-        console.log('✅ Base de Datos conectada y lista');
+        console.log(' Base de Datos conectada y lista');
     }
 });
 

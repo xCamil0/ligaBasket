@@ -1,0 +1,14 @@
+
+.ticker-container {
+  display: flex;
+  overflow-x: auto;
+  background: #111;
+  padding: 10px;
+  gap: 8px;
+}
+.game-card {
+  min-width: 180px; /* Evita que se encojan */
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+}
