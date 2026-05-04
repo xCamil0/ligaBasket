@@ -1,14 +1,117 @@
-
-.ticker-container {
-  display: flex;
-  overflow-x: auto;
-  background: #111;
-  padding: 10px;
-  gap: 8px;
+.marcador-general {
+  background-color: #f28b43;
+  width: 100%;
+  padding: 5px 0;
 }
-.game-card {
-  min-width: 180px; /* Evita que se encojan */
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
+
+.marcador-container {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  /* hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ticker-container::-webkit-scrollbar {
+  display: none;
+}
+
+.grupo-fecha {
+  display: flex;
+  align-items: stretch;
+}
+
+.columna-fecha {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #021a32;
+  padding: 10px 15px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-width: 60px;
+}
+
+.nombre-dia {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.nombre-mes {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+.numero-dia {
+  font-size: 0.85rem;
+  color: white;
+}
+
+.tarjeta-partido {
+  min-width: 180px;
+  background: #02264a;
+  padding: 10px 15px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.tarjeta-partido:hover {
+  background-color: #013b75;
+}
+
+.estado-partido {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #f28b43;
+  margin-bottom: 2px;
+}
+
+.game-subtitle {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+}
+
+.fila-equipo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.nombre-equipo {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: white;
+}
+
+.logo-equipo {
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.logo-equipo img {
+  border-radius: 50%;
+  background-color: white;
+}
+
+.puntos {
+  font-weight: bold;
+  align-items: right;
+  font-size: 0.95rem;
+  color: white;
 }

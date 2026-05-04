@@ -18,7 +18,7 @@ const path = require('path');
 app.use(cors());
 app.use(express.json());
 app.use(cors({ origin: 'http://localhost:5173' }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Para servir imágenes subidas
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'))); // Para servir imágenes subidas
 
 // --- RUTAS ---
 app.use('/api/equipos', equipoRoutes);

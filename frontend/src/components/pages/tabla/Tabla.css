@@ -1,0 +1,182 @@
+/* Tabla.css */
+
+.contenedor-pagina {
+    padding: 1.5rem;
+    min-height: 100vh;
+    background-color: transparent;
+}
+
+.contenedor-central {
+    max-width: 80rem;
+    /* equivale a max-w-7xl */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cabecera-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.titulo-tabla {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #9ca3af;
+    /* equivale a text-gray-400 */
+}
+
+.selector-temporada {
+    padding: 0.6rem 3rem 0.6rem 1.5rem;
+    border-radius: 9999px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    outline: none;
+    background-color: #f28b43;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: opacity 0.2s;
+
+    /* Ocultar la flecha por defecto del navegador */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    /* Flecha blanca personalizada separada del borde */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1.5rem center;
+    background-size: 1.2em;
+}
+
+.selector-temporada:hover {
+    opacity: 0.9;
+}
+
+.contenedor-amistosos {
+    background-color: #f28b43;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    text-align: center;
+}
+
+.titulo-amistosos {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000000;
+}
+
+.texto-amistosos {
+    color: #000000;
+    margin-top: 0.5rem;
+}
+
+.texto-amistosos-destacado {
+    color: #ff0000;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
+.contenedor-tabla {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+    background-color: #f28b43;
+    border-radius: 0.75rem;
+    padding: 0.2rem;
+}
+
+.tabla-posiciones {
+    width: 100%;
+    text-align: left;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background-color: #021a32;
+    color: white;
+    border-collapse: collapse;
+}
+
+.cabecera-columnas {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #f28b43;
+}
+
+.celda-cabecera {
+    padding: 1rem;
+}
+
+.celda-cabecera-centro {
+    padding: 1rem;
+    text-align: center;
+}
+
+.cuerpo-tabla tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cuerpo-tabla tr:last-child {
+    border-bottom: none;
+}
+
+.fila-tabla {
+    transition: background-color 0.2s;
+}
+
+.fila-tabla:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.celda-posicion {
+    padding: 1rem;
+    text-align: center;
+    font-family: monospace;
+}
+
+.celda-logo {
+    padding: 1rem;
+}
+
+.logo-equipo-tabla {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.celda-equipo {
+    padding: 1rem;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.enlace-equipo {
+    color: white;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.enlace-equipo:hover {
+    color: #f28b43;
+}
+
+.celda-estadistica {
+    padding: 1rem;
+    text-align: center;
+}
+
+.celda-puntos {
+    padding: 1rem;
+    text-align: center;
+    font-weight: 700;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #f28b43;
+}
+
+.celda-vacia {
+    padding: 2.5rem;
+    text-align: center;
+    color: #9ca3af;
+}
