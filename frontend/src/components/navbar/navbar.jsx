@@ -1,3 +1,7 @@
+/**
+ * navbar.jsx — Barra de navegación principal.
+ * Links a las secciones, indicador de ruta activa, login/logout y saludo al admin.
+ */
 import { useState, useEffect } from 'react';
 import LoginModal from '../pages/login/login';
 import './navbar.css';
@@ -5,27 +9,24 @@ import './navbar.css';
 const Navbar = () => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
 
+    // Verificar si hay sesión activa al montar
     useEffect(() => {
-        // Check if token exists on mount
         const token = localStorage.getItem('token');
-        if (token) {
-            setIsLoggedIn(true);
-        }
+        if (token) setIsLoggedIn(true);
     }, []);
 
     const handleLoginSuccess = () => {
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
-        window.location.reload(); // Recargar la página al iniciar sesión
+        window.location.reload();
     };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         setIsLoggedIn(false);
-        window.location.reload(); // Recargar la página al cerrar sesión
+        window.location.reload();
     };
 
     return (
@@ -41,6 +42,7 @@ const Navbar = () => {
                     <a href="/pichichi" className={window.location.pathname === '/pichichi' ? 'nav-btn-active' : 'nav-link'}>Pichichi</a>
                     <a href="/partidos" className={window.location.pathname === '/partidos' ? 'nav-btn-active' : 'nav-link'}>Partidos</a>
                     <a href="/jugadores" className={window.location.pathname === '/jugadores' ? 'nav-btn-active' : 'nav-link'}>Jugadores</a>
+                    {isLoggedIn && <a href="/admin" className={window.location.pathname === '/admin' ? 'nav-btn-active' : 'nav-link'}>Admin</a>}
                 </div>
 
                 <div className="navbar-auth">

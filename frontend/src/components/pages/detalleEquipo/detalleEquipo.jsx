@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * detalleEquipo.jsx — Página de detalle de un equipo.
+ * Muestra info del equipo, plantilla de jugadores, partidos jugados y pendientes.
+ */
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import './detalleEquipo.css';
@@ -8,10 +12,10 @@ const DetalleEquipo = () => {
     const [datos, setDatos] = useState(null);
     const [cargando, setCargando] = useState(true);
 
+    // Cargar detalle completo del equipo (info, jugadores, partidos)
     useEffect(() => {
         const cargarDetalle = async () => {
             try {
-                // Un solo endpoint que devuelve todo: equipo, jugadores, partidos jugados y pendientes
                 const res = await axios.get(`http://localhost:5000/api/equipos/${id}/detalle`);
                 setDatos(res.data);
             } catch (error) {
@@ -36,9 +40,8 @@ const DetalleEquipo = () => {
 
     return (
         <div className="detalle-page">
-            {/* ===== ZONA SUPERIOR ===== */}
+            {/* Zona superior: info del equipo y jugadores */}
             <div className="detalle-top">
-                {/* Tarjeta del Equipo */}
                 <div className="detalle-equipo-card">
                     <div className="detalle-equipo-logo-wrapper">
                         {equipo.logo ? (
@@ -54,7 +57,6 @@ const DetalleEquipo = () => {
                     <p className="detalle-equipo-nombre">{equipo.nombre}</p>
                 </div>
 
-                {/* Info Central: Entrenador y Temporada */}
                 <div className="detalle-info-central">
                     <div className="info-pill-group">
                         <span className="info-pill">Entrenador</span>
@@ -70,7 +72,6 @@ const DetalleEquipo = () => {
                     </div>
                 </div>
 
-                {/* Tabla de Jugadores */}
                 <div className="detalle-jugadores-wrapper">
                     <table className="detalle-tabla">
                         <thead>
@@ -99,10 +100,8 @@ const DetalleEquipo = () => {
                 </div>
             </div>
 
-            {/* ===== ZONA INFERIOR: Partidos ===== */}
+            {/* Zona inferior: historial de partidos */}
             <div className="detalle-bottom">
-
-                {/* Partidos Jugados */}
                 <div className="partidos-seccion">
                     <div className="partidos-header">Partidos jugados</div>
                     <div className="partidos-lista">
@@ -121,7 +120,6 @@ const DetalleEquipo = () => {
                     </div>
                 </div>
 
-                {/* Partidos Pendientes */}
                 <div className="partidos-seccion">
                     <div className="partidos-header">Partidos pendientes</div>
                     <div className="partidos-lista">
@@ -139,7 +137,6 @@ const DetalleEquipo = () => {
                         )}
                     </div>
                 </div>
-
             </div>
         </div>
     );

@@ -1,3 +1,7 @@
+/**
+ * db.js — Configuración del pool de conexiones a PostgreSQL.
+ * Usa variables de entorno para credenciales.
+ */
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -9,12 +13,11 @@ const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
-// Verificación de conexión
-pool.query('SELECT NOW()', (err, res) => {
+pool.query('SELECT NOW()', (err) => {
     if (err) {
-        console.error(' Error conectando a la DB:', err.stack);
+        console.error('Error conectando a la DB:', err.stack);
     } else {
-        console.log(' Base de Datos conectada y lista');
+        console.log('Base de Datos conectada y lista');
     }
 });
 

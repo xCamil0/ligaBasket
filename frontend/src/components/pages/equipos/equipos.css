@@ -12,10 +12,11 @@
 /* Sidebar Naranja */
 .equipos-sidebar {
     width: 280px;
-    background-color: #f28b43;
-    border-top-right-radius: 2.5rem;
+    background-color: #021a32;
+    border-radius: 2.5rem;
+    border: solid #f28b43;
     padding: 3rem 2.5rem;
-    color: #021a32;
+    color: #f28b43;
     flex-shrink: 0;
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
 }
@@ -28,12 +29,12 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #021a32;
+    color: #a9a9a9;
 }
 
 .sidebar-subtitle {
     font-size: 0.85rem;
-    color: #021a32;
+    color: #f28b43;
     margin-top: -0.8rem;
     margin-bottom: 1.2rem;
     opacity: 0.75;
@@ -49,7 +50,7 @@
 }
 
 .sidebar-link {
-    color: #021a32;
+    color: #f28b43;
     text-decoration: none;
     font-size: 1.15rem;
     font-weight: 500;
@@ -88,14 +89,13 @@
 
 /* Tarjeta del Equipo */
 .equipo-card {
-    background-color: #f28b43;
+    background-color: transparent;
+    border: solid #f28b43 0.15rem;
     border-radius: 2rem;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    aspect-ratio: 4 / 5;
     transition: transform 0.3s, box-shadow 0.3s;
     cursor: pointer;
 }
@@ -122,7 +122,7 @@
 }
 
 .equipo-card-name {
-    color: #021a32;
+    color: #f28b43;
     font-weight: 600;
     font-size: 1.2rem;
     text-align: center;

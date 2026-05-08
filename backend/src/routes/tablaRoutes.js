@@ -1,3 +1,4 @@
+/** tablaRoutes.js — Ruta de la tabla de posiciones (/api/tabla). */
 const express = require('express');
 const router = express.Router();
 const tablaController = require('../controllers/tablaController');

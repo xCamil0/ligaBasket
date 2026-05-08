@@ -1,20 +1,35 @@
+/**
+ * statsController.js — Controlador de estadísticas.
+ * Ranking de máximos anotadores (Pichichi) por temporada.
+ */
 const pool = require('../config/db');
 
+/** Devuelve el top 10 de anotadores de una temporada (?temporada_id=X). */
 const obtenerPichichi = async (req, res) => {
     const { temporada_id } = req.query;
-    try {
 
-        const existeTemporada = await pool.query('SELECT id FROM temporadas WHERE id = $1', [temporada_id]);
+    try {
+        if (!temporada_id) {
+            return res.status(400).json({ error: "Falta el parámetro temporada_id" });
+        }
+
+        if (isNaN(temporada_id)) {
+            return res.status(400).json({ error: "El parámetro temporada_id debe ser un número" });
+        }
+
+        const existeTemporada = await pool.query(
+            'SELECT id FROM temporadas WHERE id = $1',
+            [temporada_id]
+        );
 
         if (existeTemporada.rows.length === 0) {
-            // Si no hay resultados, devolvemos error 404 y cortamos la ejecución
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: "Temporada no encontrada",
-                mensaje: `El ID ${temporada_id} no corresponde a ninguna temporada registrada.` 
+                mensaje: `El ID ${temporada_id} no corresponde a ninguna temporada registrada.`
             });
         }
 
-        const query = `
+        const resultado = await pool.query(`
             SELECT 
                 j.id,
                 j.nombre_apellido,
@@ -27,18 +42,10 @@ const obtenerPichichi = async (req, res) => {
             GROUP BY j.id, j.nombre_apellido, e.nombre
             ORDER BY total_puntos DESC
             LIMIT 10;
-        `;
+        `, [temporada_id]);
 
-        if (!temporada_id) {
-            return res.status(400).json({ error: "Falta el parámetro temporada_id" });
-        }
-
-        if (isNaN(temporada_id)) {
-            return res.status(400).json({ error: "El parámetro temporada_id debe ser un número" });
-        }
-
-        const resultado = await pool.query(query, [temporada_id]);
         res.json(resultado.rows);
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error al obtener el ranking de anotadores" });

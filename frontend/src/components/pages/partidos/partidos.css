@@ -1,0 +1,418 @@
+/* =========================================
+   PARTIDOS PAGE — Navy + Orange Theme
+   ========================================= */
+
+/* === Page Container === */
+.partidos-pagina {
+    min-height: 100vh;
+    background: #0a1628;
+    padding: 30px 20px 60px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.partidos-contenedor {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+/* === Title === */
+.partidos-titulo {
+    color: #f28b43;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    letter-spacing: 0.5px;
+}
+
+/* === Selectors === */
+.partidos-selectores {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.selector-wrapper {
+    position: relative;
+}
+
+.partidos-selector {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    color: #f28b43;
+    border: 2px solid #f28b43;
+    border-radius: 50px;
+    padding: 10px 40px 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.25s ease;
+    min-width: 200px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f28b43' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+}
+
+.partidos-selector:hover {
+    background-color: rgba(242, 139, 67, 0.1);
+    box-shadow: 0 0 16px rgba(242, 139, 67, 0.15);
+}
+
+.partidos-selector:focus {
+    box-shadow: 0 0 0 3px rgba(242, 139, 67, 0.2);
+}
+
+.partidos-selector:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.partidos-selector option {
+    background: #0d1f3c;
+    color: #f5f5f5;
+}
+
+/* === Match List === */
+.partidos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* === Individual Match Block === */
+.partido-bloque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+
+.partido-bloque:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.partido-bloque:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.partido-bloque:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.partido-bloque:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.partido-bloque:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.partido-bloque:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+.partido-bloque:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.partido-bloque:nth-child(8) {
+    animation-delay: 0.4s;
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === Match Meta (Date, Time, Venue) === */
+.partido-meta {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    letter-spacing: 0.3px;
+}
+
+/* === Match Card === */
+.partido-tarjeta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: linear-gradient(135deg, rgba(15, 30, 55, 0.9), rgba(10, 22, 40, 0.95));
+    border: 2.5px solid #f28b43;
+    border-radius: 50px;
+    padding: 14px 28px;
+    gap: 0;
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.partido-tarjeta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50px;
+    background: linear-gradient(90deg,
+            rgba(242, 139, 67, 0.04) 0%,
+            rgba(242, 139, 67, 0.08) 50%,
+            rgba(242, 139, 67, 0.04) 100%);
+    pointer-events: none;
+}
+
+.partido-tarjeta:hover {
+    border-color: #ff9f5a;
+    box-shadow: 0 4px 30px rgba(242, 139, 67, 0.15),
+        0 0 60px rgba(242, 139, 67, 0.05);
+    transform: translateY(-2px);
+}
+
+/* === Team Section === */
+.partido-equipo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    z-index: 1;
+}
+
+.partido-equipo--local {
+    justify-content: flex-end;
+}
+
+.partido-equipo--visitante {
+    justify-content: flex-start;
+}
+
+/* === Team Name === */
+.partido-nombre {
+    color: #f0f4f8;
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+    letter-spacing: 0.2px;
+}
+
+/* === Team Logo === */
+.partido-logo-wrapper {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(242, 139, 67, 0.1);
+    border: 2px solid rgba(242, 139, 67, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.partido-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.partido-logo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* === VS Badge === */
+.partido-vs-container {
+    flex-shrink: 0;
+    margin: 0 16px;
+    z-index: 1;
+}
+
+.partido-vs {
+    background: #f28b43;
+    color: #0a1628;
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 6px 16px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 12px rgba(242, 139, 67, 0.3);
+}
+
+/* === Score (Finished Matches) === */
+.partido-marcador {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(242, 139, 67, 0.15);
+    border: 2px solid #f28b43;
+    padding: 6px 14px;
+    border-radius: 8px;
+}
+
+.marcador-puntos {
+    color: #f28b43;
+    font-size: 1.1rem;
+    font-weight: 800;
+    min-width: 22px;
+    text-align: center;
+}
+
+.marcador-separador {
+    color: #f28b43;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* === Match Status Badge === */
+.partido-estado {
+    margin-top: -2px;
+}
+
+.estado-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.estado-badge.finalizado {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* === Loading State === */
+.partidos-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 60px 0;
+}
+
+.partidos-loading p {
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(242, 139, 67, 0.2);
+    border-top-color: #f28b43;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Empty State === */
+.partidos-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 0;
+}
+
+.vacio-icono {
+    font-size: 2.5rem;
+    opacity: 0.6;
+}
+
+.partidos-vacio p {
+    color: #64748b;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .partidos-titulo {
+        font-size: 1.5rem;
+    }
+
+    .partidos-selectores {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .partidos-selector {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .partido-tarjeta {
+        border-radius: 30px;
+        padding: 12px 16px;
+        flex-wrap: nowrap;
+    }
+
+    .partido-nombre {
+        font-size: 0.82rem;
+        max-width: 110px;
+    }
+
+    .partido-logo-wrapper {
+        width: 34px;
+        height: 34px;
+    }
+
+    .partido-vs-container {
+        margin: 0 10px;
+    }
+
+    .partido-vs {
+        font-size: 0.75rem;
+        padding: 5px 12px;
+    }
+
+    .partido-equipo {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .partido-nombre {
+        font-size: 0.75rem;
+        max-width: 80px;
+    }
+
+    .partido-logo-wrapper {
+        width: 28px;
+        height: 28px;
+    }
+
+    .partido-tarjeta {
+        padding: 10px 12px;
+    }
+
+}

@@ -1,28 +1,26 @@
+/**
+ * Tabla.jsx — Página de tabla de posiciones.
+ * Muestra PJ, G, E, P, PF, PC, DP, PTS por equipo en la temporada seleccionada.
+ */
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Tabla.css';
 
 const Standings = () => {
-  // 1. Estado para guardar los datos de la tabla
   const [tabla, setTabla] = useState([]);
-  // 2. Estado para manejar la temporada seleccionada (por defecto la 1)
   const [temporadaId, setTemporadaId] = useState("");
-  // 3. Estado para saber si está cargando (opcional, pero profesional)
   const [cargando, setCargando] = useState(true);
-
   const [temporadas, setTemporadas] = useState([]);
 
+  // Cargar temporadas y seleccionar la más reciente
   useEffect(() => {
-
     const cargarTemporadas = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/temporadas');
         setTemporadas(res.data);
 
-        // Si hay temporadas, seleccionamos la última (la más reciente) por defecto
         if (res.data.length > 0) {
-          // Suponiendo que la última de la lista es la actual
-          setTemporadaId(res.data[res.data.length + 2].id);
+          setTemporadaId(res.data[res.data.length - 1].id);
         }
       } catch (error) {
         console.error("Error cargando temporadas:", error);
@@ -31,22 +29,24 @@ const Standings = () => {
     cargarTemporadas();
   }, []);
 
+  // Obtener datos de la tabla cuando cambia la temporada
   useEffect(() => {
     if (!temporadaId || Number(temporadaId) === 1) {
       setTabla([]);
       setCargando(false);
       return;
     }
+
     const obtenerDatosTabla = async () => {
       try {
         setCargando(true);
-        const res = await axios.get(`http://localhost:5000/api/tabla`, {
-          params: { temporada: temporadaId } // Usando tu formato ?temporada=X
+        const res = await axios.get('http://localhost:5000/api/tabla', {
+          params: { temporada: temporadaId }
         });
         setTabla(res.data);
       } catch (error) {
         console.error("Error al traer la tabla:", error);
-        setTabla([]); // Limpiar tabla si hay error
+        setTabla([]);
       } finally {
         setCargando(false);
       }
@@ -59,7 +59,6 @@ const Standings = () => {
     <div className="contenedor-pagina">
       <div className="contenedor-central">
 
-        {/* CABECERA Y SELECTOR */}
         <div className="cabecera-tabla">
           <h1 className="titulo-tabla">Posiciones</h1>
           <select
@@ -67,16 +66,14 @@ const Standings = () => {
             value={temporadaId}
             onChange={(e) => setTemporadaId(e.target.value)}
           >
-            <option value="" disabled selected>Seleccionar Temporada</option>
+            <option value="" disabled>Seleccionar Temporada</option>
             {temporadas.map(temp => (
               <option key={temp.id} value={temp.id}>{temp.nombre}</option>
             ))}
           </select>
         </div>
 
-        {/* LÓGICA DE RENDERIZADO CONDICIONAL */}
         {Number(temporadaId) === 1 ? (
-          // VISTA PARA AMISTOSOS
           <div className="contenedor-amistosos">
             <h2 className="titulo-amistosos">Temporada de Amistosos</h2>
             <p className="texto-amistosos">
@@ -87,7 +84,6 @@ const Standings = () => {
             </p>
           </div>
         ) : (
-          // VISTA DE TABLA NORMAL
           <div className="contenedor-tabla">
             <table className="tabla-posiciones">
               <thead className="cabecera-columnas">
@@ -116,7 +112,7 @@ const Standings = () => {
                         <img src={`http://localhost:5000${fila.logo}`} alt={fila.nombre} className="logo-equipo-tabla" />
                       </td>
                       <td className="celda-equipo">
-                        <a href={`/equipo/${fila.id}`} className="enlace-equipo">{fila.nombre}</a>
+                        <a href={`/equipos/${fila.id}/detalle`} className="enlace-equipo">{fila.nombre}</a>
                       </td>
                       <td className="celda-estadistica">{fila.pj}</td>
                       <td className="celda-estadistica">{fila.g}</td>

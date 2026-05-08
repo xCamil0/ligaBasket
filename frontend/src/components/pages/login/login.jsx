@@ -1,3 +1,7 @@
+/**
+ * login.jsx — Modal de inicio de sesión.
+ * Envía credenciales al backend y almacena el JWT en localStorage.
+ */
 import { useState } from 'react';
 import axios from 'axios';
 import './login.css';
@@ -7,6 +11,7 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  /** Envía las credenciales y guarda el token si el login es exitoso. */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -18,7 +23,7 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
       localStorage.setItem('username', res.data.username);
       onLoginSuccess();
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.error) {
+      if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Error al iniciar sesión");
@@ -35,20 +40,20 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Usuario</label>
-            <input 
-              type="text" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              required 
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
             />
           </div>
           <div className="form-group">
             <label>Contraseña</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
           <button type="submit" className="submit-btn">Ingresar</button>
