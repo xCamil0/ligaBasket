@@ -104,14 +104,14 @@ const Scoreboard = () => {
                       {equipoLocal ? <span className="logo-equipo"><img src={`http://localhost:5000${equipoLocal.logo}`} alt={`${equipoLocal.nombre} logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></span> : null}
                       {equipoLocal ? equipoLocal.nombre : 'Cargando...'}
                     </span>
-                    <span className="puntos">{partido.puntos_local}</span>
+                    <span className="puntos">{partido.puntos_local !== null ? partido.puntos_local : '-'}</span>
                   </div>
                   <div className="fila-equipo">
                     <span className="nombre-equipo">
                       {equipoVisitante ? <span className="logo-equipo"><img src={`http://localhost:5000${equipoVisitante.logo}`} alt={`${equipoVisitante.nombre} logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></span> : null}
                       {equipoVisitante ? equipoVisitante.nombre : 'Cargando...'}
                     </span>
-                    <span className="puntos">{partido.puntos_visitante}</span>
+                    <span className="puntos">{partido.puntos_visitante !== null ? partido.puntos_visitante : '-'}</span>
                   </div>
                 </div>
               );

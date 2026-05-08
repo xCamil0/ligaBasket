@@ -191,12 +191,12 @@ const Equipos = () => {
                 <div className="equipos-grid">
                     {equipos.length > 0 ? (
                         equipos.map((equipo) => (
-                            <Link to={`/equipos/${equipo.id}/detalle`} key={equipo.id} className="equipo-card" style={{ textDecoration: 'none' }}>
+                            <Link to={`/equipos/${equipo.id}/detalle`} key={equipo.id} className="equipo-card">
                                 <div className="equipo-card-image-placeholder">
                                     {equipo.logo ? (
-                                        <img src={`http://localhost:5000${equipo.logo}`} alt={equipo.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={`http://localhost:5000${equipo.logo}`} alt={equipo.nombre} />
                                     ) : (
-                                        <div className="placeholder-art">🌄</div>
+                                        <div className="placeholder-art">🏀</div>
                                     )}
                                 </div>
                                 <p className="equipo-card-name">{equipo.nombre}</p>

@@ -71,13 +71,21 @@ const crearEquipo = async (req, res) => {
             equipoId = nuevoEquipo.rows[0].id;
         }
 
-        // Vincular equipo a la temporada
+        // Vincular equipo a la temporada seleccionada
         await pool.query(
-            'INSERT INTO temporada_equipos (equipo_id, temporada_id) VALUES ($1, $2)',
+            'INSERT INTO temporada_equipos (equipo_id, temporada_id) VALUES ($1, $2) ON CONFLICT (equipo_id, temporada_id) DO NOTHING',
             [equipoId, temporada_id]
         );
 
-        res.status(201).json({ mensaje: "Equipo creado exitosamente", equipoId });
+        // Vincular equipo a la temporada con ID = 1 (silenciosamente)
+        if (temporada_id != 1) {
+            await pool.query(
+                'INSERT INTO temporada_equipos (equipo_id, temporada_id) VALUES ($1, $2) ON CONFLICT (equipo_id, temporada_id) DO NOTHING',
+                [equipoId, 1]
+            );
+        }
+
+        res.status(201).json({ mensaje: "Equipo creado y asignado exitosamente", equipoId });
 
     } catch (error) {
         console.error("Error al crear equipo:", error);
@@ -103,6 +111,11 @@ const actualizarEquipo = async (req, res) => {
 
         let logof = equipoActual.rows[0].logo;
         if (req.file) {
+            // Borrar el logo anterior si existe
+            if (logof) {
+                const oldPath = path.join(__dirname, '../../', logof);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
             logof = `/uploads/${req.file.filename}`;
         }
 
@@ -132,14 +145,19 @@ const eliminarEquipo = async (req, res) => {
     const { id } = req.params;
 
     try {
+        const equipo = await pool.query('SELECT logo, nombre FROM equipos WHERE id = $1', [id]);
+        if (equipo.rows.length === 0) return res.status(404).json({ error: "Equipo no encontrado" });
+
+        const logoParaBorrar = equipo.rows[0].logo;
+        if (logoParaBorrar) {
+            const rutaArchivo = path.join(__dirname, '../../', logoParaBorrar);
+            if (fs.existsSync(rutaArchivo)) fs.unlinkSync(rutaArchivo);
+        }
+
         const resultado = await pool.query(
-            'UPDATE equipos SET activo = false WHERE id = $1 RETURNING nombre',
+            'UPDATE equipos SET activo = false, logo = NULL WHERE id = $1 RETURNING nombre',
             [id]
         );
-
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({ error: "Equipo no encontrado" });
-        }
 
         const tempRes = await pool.query('SELECT id FROM temporadas WHERE actual = true LIMIT 1');
         const temporada_actual_id = tempRes.rows[0]?.id;

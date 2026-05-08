@@ -1,11 +1,15 @@
 .navbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   background-color: transparent;
-  /* Allows global body color to show */
   padding: 1.5rem 3rem;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  border-bottom: 1px solid #f28b43;
+}
+
+.navbar-logo {
+  justify-self: start;
 }
 
 .navbar-logo a {
@@ -31,11 +35,15 @@
 }
 
 .navbar-links-main {
-  flex-grow: 1;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 2rem;
+  justify-self: center;
+}
+
+.navbar-auth {
+  justify-self: end;
 }
 
 .nav-link {

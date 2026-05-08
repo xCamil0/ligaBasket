@@ -2,23 +2,22 @@
 
 .equipos-page-container {
     display: flex;
-    min-height: calc(100vh - 100px);
-    /* Restando la altura aproximada del navbar */
-    background-color: transparent;
+    min-height: 100vh;
+    background: radial-gradient(circle at top right, #0a1b3a 0%, #021a32 100%);
     color: white;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
 /* Sidebar Naranja */
 .equipos-sidebar {
     width: 280px;
-    background-color: #021a32;
-    border-radius: 2.5rem;
-    border: solid #f28b43;
-    padding: 3rem 2.5rem;
+    background: rgba(13, 27, 42, 0.5);
+    border-right: 2px solid rgba(242, 139, 67, 0.2);
+    border-top: 2px solid rgba(242, 139, 67, 0.2);
+    padding: 3rem 2rem;
     color: #f28b43;
     flex-shrink: 0;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
 }
 
 .sidebar-section {
@@ -89,44 +88,58 @@
 
 /* Tarjeta del Equipo */
 .equipo-card {
-    background-color: transparent;
-    border: solid #f28b43 0.15rem;
-    border-radius: 2rem;
-    padding: 1.5rem;
+    background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
+    border: 2px solid rgba(242, 139, 67, 0.3);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: all 0.3s ease;
     cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    text-decoration: none;
 }
 
 .equipo-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 15px 30px rgba(242, 139, 67, 0.25);
+    border-color: #f28b43;
+    box-shadow: 0 15px 35px rgba(242, 139, 67, 0.2);
 }
 
 .equipo-card-image-placeholder {
-    width: 100%;
-    aspect-ratio: 1;
-    background-color: white;
-    border-radius: 1.2rem;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px dashed rgba(242, 139, 67, 0.2);
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 1.5rem;
     overflow: hidden;
+    padding: 10px;
+}
+
+.equipo-card-image-placeholder img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
 }
 
 .placeholder-art {
-    font-size: 5rem;
+    font-size: 4rem;
 }
 
 .equipo-card-name {
     color: #f28b43;
-    font-weight: 600;
-    font-size: 1.2rem;
+    font-weight: 900;
+    font-size: 1.3rem;
     text-align: center;
     margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 /* Modales de Admin (Reutilizando estilo oscuro) */

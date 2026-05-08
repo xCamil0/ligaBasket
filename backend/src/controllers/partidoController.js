@@ -9,6 +9,13 @@ const obtenerTodosLosPartidos = async (req, res) => {
     const { temporada_id, jornada } = req.query;
 
     try {
+        // Auto-finalizar partidos pasados
+        const hoy = new Date().toISOString().split('T')[0];
+        await pool.query(
+            "UPDATE partidos SET finalizado = true WHERE fecha < $1 AND finalizado = false",
+            [hoy]
+        );
+
         let query = `
             SELECT 
                 p.*, 
@@ -54,6 +61,13 @@ const obtenerPartidosPorJornada = async (req, res) => {
     const { jornada } = req.query;
 
     try {
+        // Auto-finalizar partidos pasados
+        const hoy = new Date().toISOString().split('T')[0];
+        await pool.query(
+            "UPDATE partidos SET finalizado = true WHERE fecha < $1 AND finalizado = false",
+            [hoy]
+        );
+
         const result = await pool.query(`
             SELECT 
                 p.*, 
@@ -77,7 +91,7 @@ const obtenerPartidosPorJornada = async (req, res) => {
 
 /** Crea un partido validando: temporada, inscripción de equipos, rango de fecha y conflictos de horario. */
 const crearPartido = async (req, res) => {
-    const { id_equipo_local, id_equipo_visitante, fecha, horario, temporada_id } = req.body;
+    const { id_equipo_local, id_equipo_visitante, fecha, horario, temporada_id, jornada, lugar } = req.body;
 
     try {
         let temporadaParaRegistrar;
@@ -132,15 +146,18 @@ const crearPartido = async (req, res) => {
             return res.status(400).json({ error: "Conflicto de horario: uno de los equipos ya juega a esa hora." });
         }
 
-        // Obtener estadio del equipo local
-        const localData = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_equipo_local]);
-        const estadio = localData.rows[0]?.estadio || 'Estadio por definir';
+        // Determinar el lugar (prioridad: manual > estadio local)
+        let lugarFinal = lugar;
+        if (!lugarFinal) {
+            const localData = await pool.query('SELECT estadio FROM equipos WHERE id = $1', [id_equipo_local]);
+            lugarFinal = localData.rows[0]?.estadio || 'Estadio por definir';
+        }
 
         // Insertar el partido
         const nuevoPartido = await pool.query(
-            `INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar, temporada_id, finalizado) 
-             VALUES ($1, $2, $3, $4, $5, $6, false) RETURNING *`,
-            [id_equipo_local, id_equipo_visitante, fecha, horario, estadio, tempId]
+            `INSERT INTO partidos (id_equipo_local, id_equipo_visitante, fecha, horario, lugar, temporada_id, jornada, finalizado) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING *`,
+            [id_equipo_local, id_equipo_visitante, fecha, horario, lugarFinal, tempId, jornada || null]
         );
 
         res.status(201).json({
@@ -274,11 +291,16 @@ const actualizarPartido = async (req, res) => {
     const { id } = req.params;
     const { id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, temporada_id, jornada } = req.body;
     try {
+        // Convertir strings vacíos a null para campos de tipo integer en la DB
+        const pLocal = (puntos_local === '' || puntos_local === undefined) ? null : puntos_local;
+        const pVisitante = (puntos_visitante === '' || puntos_visitante === undefined) ? null : puntos_visitante;
+        const jornadaVal = (jornada === '' || jornada === undefined) ? null : jornada;
+
         const resultado = await pool.query(
             `UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, puntos_local = $3, 
              puntos_visitante = $4, fecha = $5, horario = $6, lugar = $7, temporada_id = $8, jornada = $9 
              WHERE id = $10 RETURNING *`,
-            [id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, temporada_id, jornada, id]
+            [id_equipo_local, id_equipo_visitante, pLocal, pVisitante, fecha, horario, lugar, temporada_id, jornadaVal, id]
         );
 
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Partido no encontrado" });
@@ -290,12 +312,11 @@ const actualizarPartido = async (req, res) => {
     }
 };
 
-/** Elimina un partido por ID y temporada. */
+/** Elimina un partido por ID. */
 const eliminarPartido = async (req, res) => {
     const { id } = req.params;
-    const { temporada_id } = req.query;
     try {
-        const resultado = await pool.query('DELETE FROM partidos WHERE id = $1 AND temporada_id = $2 RETURNING *', [id, temporada_id]);
+        const resultado = await pool.query('DELETE FROM partidos WHERE id = $1 RETURNING *', [id]);
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Partido no existe" });
         res.json({ mensaje: "Partido eliminado" });
     } catch (error) {
@@ -327,6 +348,13 @@ const listarPartidosPorTemporada = async (req, res) => {
     const { temporada_id } = req.params;
 
     try {
+        // Auto-finalizar partidos pasados
+        const hoy = new Date().toISOString().split('T')[0];
+        await pool.query(
+            "UPDATE partidos SET finalizado = true WHERE fecha < $1 AND finalizado = false",
+            [hoy]
+        );
+
         const result = await pool.query(
             `SELECT p.*, e1.nombre as local, e2.nombre as visitante 
              FROM partidos p

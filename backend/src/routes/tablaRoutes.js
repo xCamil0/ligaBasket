@@ -2,7 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const tablaController = require('../controllers/tablaController');
+const { validarRequeridos } = require('../middlewares/validaciones');
 
-router.get('/', tablaController.obtenerTabla);
+router.get('/',
+    validarRequeridos(['temporada_id'], 'query'),
+    tablaController.obtenerTabla
+);
 
 module.exports = router;
