@@ -13,7 +13,7 @@ router.post('/',
 );
 router.post('/equipos',
     auth.verificarToken,
-    validarRequeridos(['temporada_id', 'equipos']),
+    validarRequeridos(['temporada_id', 'equipos_ids']),
     asignarEquipos
 );
 router.put('/actual/:id',

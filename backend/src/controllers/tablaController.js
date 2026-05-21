@@ -4,11 +4,11 @@
  */
 const pool = require('../config/db');
 
-/** Calcula y devuelve la tabla de posiciones para la temporada indicada (?temporada=X). */
+/** Calcula y devuelve la tabla de posiciones para la temporada indicada (?temporada_id=X). */
 const obtenerTabla = async (req, res) => {
-    const { temporada } = req.query;
+    const { temporada_id } = req.query;
 
-    if (!temporada) {
+    if (!temporada_id) {
         return res.status(400).json({ error: "Debes especificar una temporada" });
     }
 
@@ -50,7 +50,7 @@ const obtenerTabla = async (req, res) => {
                 ((g * 3) + (e * 1)) as pts
             FROM stats 
             ORDER BY pts DESC, dp DESC, pf DESC;
-        `, [temporada]);
+        `, [temporada_id]);
 
         res.json(result.rows);
     } catch (error) {

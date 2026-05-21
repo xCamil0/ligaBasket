@@ -11,6 +11,7 @@ const Partidos = () => {
     const [jornadaSeleccionada, setJornadaSeleccionada] = useState('');
     const [cargando, setCargando] = useState(false);
 
+    const [jornadasForm, setJornadasForm] = useState([]);
     // Estados de Administración
     const [isAdmin, setIsAdmin] = useState(false);
     const [modalActivo, setModalActivo] = useState(null);
@@ -75,6 +76,24 @@ const Partidos = () => {
         };
         obtenerJornadas();
     }, [temporadaId]);
+
+    // Cargar jornadas para el formulario cuando cambia la temporada seleccionada en el modal
+    useEffect(() => {
+        if (!formData.temporada_id || formData.temporada_id === 'disabled') {
+            setJornadasForm([]);
+            return;
+        }
+        const obtenerJornadasForm = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/partidos/${formData.temporada_id}/jornadas`);
+                setJornadasForm(res.data);
+            } catch (error) {
+                console.error('Error cargando jornadas para el form:', error);
+                setJornadasForm([]);
+            }
+        };
+        obtenerJornadasForm();
+    }, [formData.temporada_id]);
 
     // Cargar partidos cuando cambia la temporada o la jornada
     useEffect(() => {
@@ -166,8 +185,8 @@ const Partidos = () => {
                 }
 
                 await axios.put(`http://localhost:5000/api/partidos/${partidoSeleccionado}/finalizar`, {
-                    puntos_local: formData.puntos_local,
-                    puntos_visitante: formData.puntos_visitante,
+                    puntos_local: parseInt(formData.puntos_local, 10),
+                    puntos_visitante: parseInt(formData.puntos_visitante, 10),
                     anotaciones: anotaciones.filter(a => a.puntos > 0)
                 }, { headers });
             }
@@ -289,7 +308,22 @@ const Partidos = () => {
                                 <label>Seleccionar Partido</label>
                                 <select className="admin-input" value={partidoSeleccionado} onChange={(e) => handlePartidoSelect(e.target.value)}>
                                     <option value="">-- Elija un partido --</option>
-                                    {partidos.map(p => <option key={p.id} value={p.id}>{p.local} vs {p.visitante} (J{p.jornada})</option>)}
+                                    {partidos
+                                        .filter(p => {
+                                            if (modalActivo === 'finalizar') {
+                                                // Oculta los que ya tienen marcador registrado (ya finalizados)
+                                                return !(p.finalizado && p.puntos_local !== null);
+                                            }
+                                            return true;
+                                        })
+                                        .map(p => {
+                                            const estado = p.finalizado && p.puntos_local !== null ? 'Finalizado' : 'Pendiente';
+                                            return (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.local} vs {p.visitante} (J{p.jornada}) - {estado}
+                                                </option>
+                                            );
+                                        })}
                                 </select>
                             </div>
                         )}
@@ -326,6 +360,20 @@ const Partidos = () => {
                                             <label>Lugar</label>
                                             <input type="text" name="lugar" value={formData.lugar} onChange={handleInputChange} className="admin-input" />
                                         </div>
+                                        <div className="form-group">
+                                            <label>Temporada (Opcional)</label>
+                                            <select name="temporada_id" value={formData.temporada_id} onChange={handleInputChange} className="admin-input">
+                                                <option value="disabled">-- Seleccionar --</option>
+                                                {temporadas.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Jornada (Opcional)</label>
+                                            <select name="jornada" value={formData.jornada} onChange={handleInputChange} className="admin-input">
+                                                <option value="">-- Seleccionar --</option>
+                                                {jornadasForm.map(j => <option key={j.jornada} value={j.jornada}>Jornada {j.jornada}</option>)}
+                                            </select>
+                                        </div>
                                     </>
                                 )}
 
@@ -352,7 +400,7 @@ const Partidos = () => {
                                                         {jugadoresPartido.filter(j => j.equipo_id === parseInt(formData.id_equipo_local)).map(j => (
                                                             <div key={j.id} className="anotacion-input-group">
                                                                 <label>{j.nombre_apellido}</label>
-                                                                <input type="number" min="0" value={anotaciones.find(a => a.jugador_id === j.id)?.puntos || 0} onChange={(e) => handleAnotacionChange(j.id, e.target.value)} className="admin-input small" />
+                                                                <input type="number" min="0" value={anotaciones.find(a => a.jugador_id === j.id)?.puntos || ""} onChange={(e) => handleAnotacionChange(j.id, e.target.value)} className="admin-input small" />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -362,7 +410,7 @@ const Partidos = () => {
                                                         {jugadoresPartido.filter(j => j.equipo_id === parseInt(formData.id_equipo_visitante)).map(j => (
                                                             <div key={j.id} className="anotacion-input-group">
                                                                 <label>{j.nombre_apellido}</label>
-                                                                <input type="number" min="0" value={anotaciones.find(a => a.jugador_id === j.id)?.puntos || 0} onChange={(e) => handleAnotacionChange(j.id, e.target.value)} className="admin-input small" />
+                                                                <input type="number" min="0" value={anotaciones.find(a => a.jugador_id === j.id)?.puntos || ""} onChange={(e) => handleAnotacionChange(j.id, e.target.value)} className="admin-input small" />
                                                             </div>
                                                         ))}
                                                     </div>

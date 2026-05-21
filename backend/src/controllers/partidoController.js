@@ -104,11 +104,12 @@ const crearPartido = async (req, res) => {
             }
             temporadaParaRegistrar = resTemp.rows[0];
         } else {
-            const resActual = await pool.query('SELECT id, fecha_inicio, fecha_fin FROM temporadas WHERE actual = true LIMIT 1');
-            if (resActual.rows.length === 0) {
-                return res.status(400).json({ error: "No enviaste temporada_id y no hay ninguna temporada marcada como 'Actual'." });
+            // Si no se envía temporada_id, se asigna a la temporada de amistosos (ID 1)
+            const resDefault = await pool.query('SELECT id, fecha_inicio, fecha_fin FROM temporadas WHERE id = 1');
+            if (resDefault.rows.length === 0) {
+                return res.status(400).json({ error: "No se encontró la temporada por defecto (ID 1)." });
             }
-            temporadaParaRegistrar = resActual.rows[0];
+            temporadaParaRegistrar = resDefault.rows[0];
         }
 
         const tempId = temporadaParaRegistrar.id;
@@ -188,12 +189,19 @@ const finalizarPartido = async (req, res) => {
             return res.status(400).json({ error: "Debes proporcionar los puntos finales de ambos equipos" });
         }
 
+        const pLocal = parseInt(puntos_local, 10);
+        const pVisitante = parseInt(puntos_visitante, 10);
+
+        if (isNaN(pLocal) || isNaN(pVisitante)) {
+            return res.status(400).json({ error: "Los puntos deben ser valores numéricos válidos" });
+        }
+
         // Registrar marcador y marcar como finalizado
         const actualizarRes = await client.query(
             `UPDATE partidos 
              SET puntos_local = $1, puntos_visitante = $2, finalizado = true 
              WHERE id = $3 RETURNING *`,
-            [puntos_local, puntos_visitante, id]
+            [pLocal, pVisitante, id]
         );
 
         if (actualizarRes.rows.length === 0) {
@@ -204,9 +212,9 @@ const finalizarPartido = async (req, res) => {
 
         // Determinar ganador para asignar puntos en la tabla
         let idGanador = null;
-        if (puntos_local > puntos_visitante) {
+        if (pLocal > pVisitante) {
             idGanador = partido.id_equipo_local;
-        } else if (puntos_visitante > puntos_local) {
+        } else if (pVisitante > pLocal) {
             idGanador = partido.id_equipo_visitante;
         }
 
@@ -252,10 +260,10 @@ const finalizarPartido = async (req, res) => {
             }
 
             // Validar que la suma de anotaciones coincida con el marcador
-            if (sumaLocal !== puntos_local || sumaVisitante !== puntos_visitante) {
+            if (sumaLocal !== pLocal || sumaVisitante !== pVisitante) {
                 return res.status(400).json({
                     error: "La suma de puntos de los jugadores no coincide con el marcador final.",
-                    detalles: { local: sumaLocal, esperado_local: puntos_local, visitante: sumaVisitante, esperado_visitante: puntos_visitante }
+                    detalles: { local: sumaLocal, esperado_local: pLocal, visitante: sumaVisitante, esperado_visitante: pVisitante }
                 });
             }
 

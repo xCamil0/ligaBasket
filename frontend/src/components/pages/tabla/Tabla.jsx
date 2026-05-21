@@ -8,7 +8,7 @@ import './Tabla.css';
 
 const Standings = () => {
   const [tabla, setTabla] = useState([]);
-  const [temporadaId, setTemporadaId] = useState("");
+  const [temporada_id, setTemporada_id] = useState("");
   const [cargando, setCargando] = useState(true);
   const [temporadas, setTemporadas] = useState([]);
 
@@ -20,7 +20,7 @@ const Standings = () => {
         setTemporadas(res.data);
 
         if (res.data.length > 0) {
-          setTemporadaId(res.data[res.data.length - 1].id);
+          setTemporada_id(res.data[res.data.length - 1].id);
         }
       } catch (error) {
         console.error("Error cargando temporadas:", error);
@@ -31,7 +31,7 @@ const Standings = () => {
 
   // Obtener datos de la tabla cuando cambia la temporada
   useEffect(() => {
-    if (!temporadaId || Number(temporadaId) === 1) {
+    if (!temporada_id || Number(temporada_id) === 1) {
       setTabla([]);
       setCargando(false);
       return;
@@ -41,7 +41,7 @@ const Standings = () => {
       try {
         setCargando(true);
         const res = await axios.get('http://localhost:5000/api/tabla', {
-          params: { temporada: temporadaId }
+          params: { temporada_id: temporada_id }
         });
         setTabla(res.data);
       } catch (error) {
@@ -53,7 +53,7 @@ const Standings = () => {
     };
 
     obtenerDatosTabla();
-  }, [temporadaId]);
+  }, [temporada_id]);
 
   return (
     <div className="contenedor-pagina">
@@ -63,8 +63,8 @@ const Standings = () => {
           <h1 className="titulo-tabla">Posiciones</h1>
           <select
             className="selector-temporada"
-            value={temporadaId}
-            onChange={(e) => setTemporadaId(e.target.value)}
+            value={temporada_id}
+            onChange={(e) => setTemporada_id(e.target.value)}
           >
             <option value="" disabled>Seleccionar Temporada</option>
             {temporadas.map(temp => (
@@ -73,7 +73,7 @@ const Standings = () => {
           </select>
         </div>
 
-        {Number(temporadaId) === 1 ? (
+        {Number(temporada_id) === 1 ? (
           <div className="contenedor-amistosos">
             <h2 className="titulo-amistosos">Temporada de Amistosos</h2>
             <p className="texto-amistosos">

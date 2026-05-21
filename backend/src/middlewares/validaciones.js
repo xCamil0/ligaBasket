@@ -3,29 +3,44 @@
  */
 
 /**
- * Verifica que todos los campos requeridos estén presentes en la fuente especificada (body, params, query).
+ * Verifica que todos los campos requeridos estén presentes en la(s) fuente(s) especificada(s).
  * @param {string[]} camposRequeridos - Lista de nombres de campos.
- * @param {string} fuente - 'body', 'params' o 'query' (por defecto 'body').
+ * @param {string|string[]} fuente - 'body', 'params', 'query' o 'any' (busca en todas). Por defecto 'body'.
  */
 const validarRequeridos = (camposRequeridos, fuente = 'body') => {
     return (req, res, next) => {
         const faltantes = [];
-        const datos = req[fuente];
-
-        if (!datos) {
-            return res.status(400).json({ error: `No se enviaron datos en ${fuente}` });
-        }
+        const fuentesABuscar = fuente === 'any' ? ['body', 'query', 'params'] : (Array.isArray(fuente) ? fuente : [fuente]);
 
         camposRequeridos.forEach(campo => {
-            // Verificamos si el campo es undefined, null o un string vacío
-            if (datos[campo] === undefined || datos[campo] === null || String(datos[campo]).trim() === '') {
+            let encontrado = false;
+
+            for (const f of fuentesABuscar) {
+                const datos = req[f];
+                if (datos && datos[campo] !== undefined && datos[campo] !== null) {
+                    const valor = datos[campo];
+                    if (Array.isArray(valor)) {
+                        encontrado = true;
+                    } else if (typeof valor === 'object') {
+                        encontrado = true;
+                    } else if (typeof valor === 'boolean') {
+                        encontrado = true;
+                    } else if (String(valor).trim() !== '') {
+                        encontrado = true;
+                    }
+                    if (encontrado) break;
+                }
+            }
+
+            if (!encontrado) {
                 faltantes.push(campo);
             }
         });
 
         if (faltantes.length > 0) {
             return res.status(400).json({
-                error: `Faltan campos obligatorios en ${fuente}: ${faltantes.join(', ')}`,
+                error: `Faltan campos obligatorios: ${faltantes.join(', ')}`,
+                buscadoEn: fuentesABuscar,
                 camposFaltantes: faltantes
             });
         }

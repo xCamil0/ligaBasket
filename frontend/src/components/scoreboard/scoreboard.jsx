@@ -6,6 +6,7 @@ const Scoreboard = () => {
 
   const [partidos, setPartidos] = useState([]);
   const [equipos, setEquipos] = useState([]);
+  const [esJugados, setEsJugados] = useState(false);
 
   useEffect(() => {
 
@@ -22,8 +23,30 @@ const Scoreboard = () => {
     const obtenerPartidos = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/partidos');
-        const partidosFiltrados = res.data.filter((partido) => partido.temporada_id === 4);
-        setPartidos(partidosFiltrados);
+        const todosLosPartidos = res.data;
+
+        const hoyStr = new Date().toISOString().split('T')[0];
+
+        // Separar en próximos (incluye hoy si no ha finalizado) y jugados
+        const proximos = todosLosPartidos.filter(p => {
+          const pStr = p.fecha ? p.fecha.split('T')[0] : '';
+          return !p.finalizado && pStr >= hoyStr;
+        });
+
+        const jugados = todosLosPartidos.filter(p => {
+          const pStr = p.fecha ? p.fecha.split('T')[0] : '';
+          return p.finalizado || pStr < hoyStr;
+        });
+
+        if (proximos.length > 0) {
+          setPartidos(proximos);
+          setEsJugados(false);
+        } else {
+          // Si no hay próximos, mostramos los últimos 10 jugados
+          const ultimosJugados = jugados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 10);
+          setPartidos(ultimosJugados);
+          setEsJugados(true);
+        }
       } catch (error) {
         console.error("Error al obtener los partidos:", error);
       }
@@ -41,8 +64,14 @@ const Scoreboard = () => {
       }
       groups[dateStr].push(game);
     });
-    // Convert to array and sort by date
-    return Object.entries(groups).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+    
+    // Si estamos mostrando partidos jugados, queremos las fechas más recientes primero (descendente)
+    // Si son próximos, las fechas más cercanas primero (ascendente)
+    return Object.entries(groups).sort((a, b) => {
+      const fechaA = new Date(a[0]);
+      const fechaB = new Date(b[0]);
+      return esJugados ? fechaB - fechaA : fechaA - fechaB;
+    });
   };
 
   const obtenerNombreDia = (dateString) => {
@@ -70,6 +99,9 @@ const Scoreboard = () => {
 
   return (
     <div className="marcador-general">
+      <div className="marcador-titulo">
+        {esJugados ? 'ÚLTIMOS RESULTADOS' : 'PRÓXIMOS PARTIDOS'}
+      </div>
       <div className="marcador-container">
         {partidosAgrupadosPorFecha.map(([date, games]) => (
           <div key={date} className="grupo-fecha">

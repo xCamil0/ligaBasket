@@ -15,14 +15,14 @@ router.get('/:temporada_id', partidoController.obtenerPartidosPorJornada);
 router.get('/:id/jugadores', partidoController.obtenerJugadoresDelPartido);
 router.post('/', 
     auth.verificarToken, 
-    validarRequeridos(['id_equipo_local', 'id_equipo_visitante', 'fecha', 'jornada', 'id_temporada']),
+    validarRequeridos(['id_equipo_local', 'id_equipo_visitante', 'fecha']),
     partidoController.crearPartido
 );
 router.put('/:id', auth.verificarToken, partidoController.actualizarPartido);
 router.put('/:id/finalizar', 
     auth.verificarToken, 
     validarRequeridos(['id'], 'params'),
-    validarRequeridos(['puntos_local', 'puntos_visitante', 'jugadores']),
+    validarRequeridos(['puntos_local', 'puntos_visitante', 'anotaciones']),
     partidoController.finalizarPartido
 );
 router.delete('/:id', auth.verificarToken, partidoController.eliminarPartido);

@@ -5,7 +5,7 @@ const tablaController = require('../controllers/tablaController');
 const { validarRequeridos } = require('../middlewares/validaciones');
 
 router.get('/',
-    validarRequeridos(['temporada_id'], 'query'),
+    validarRequeridos(['temporada_id'], 'any'),
     tablaController.obtenerTabla
 );
 
