@@ -223,38 +223,49 @@ const Partidos = () => {
 
     return (
         <div className="partidos-page-wrapper">
-            {/* Sidebar de Administrador */}
+            {/* Barra de Opciones Admin directamente debajo del navbar */}
             {isAdmin && (
-                <aside className="partidos-sidebar">
-                    <div className="sidebar-section">
-                        <h3 className="sidebar-title">Gestión de Partidos</h3>
-                        <ul className="sidebar-list">
-                            <li><button onClick={() => { setModalActivo('crear'); setFormData({ ...formData, temporada_id: temporadaId }) }} className="sidebar-link-btn">• Crear Partido</button></li>
-                            <li><button onClick={() => setModalActivo('actualizar')} className="sidebar-link-btn">• Actualizar</button></li>
-                            <li><button onClick={() => setModalActivo('eliminar')} className="sidebar-link-btn">• Eliminar</button></li>
-                            <li><button onClick={() => setModalActivo('finalizar')} className="sidebar-link-btn">• Finalizar</button></li>
-                        </ul>
+                <div className="admin-options-bar">
+                    <span className="admin-bar-label">Opciones del Admin:</span>
+                    <div className="admin-bar-buttons">
+                        <button onClick={() => { setModalActivo('crear'); setFormData({ ...formData, temporada_id: temporadaId }) }} className="admin-bar-btn">Crear Partido</button>
+                        <button onClick={() => setModalActivo('actualizar')} className="admin-bar-btn">Actualizar Partido</button>
+                        <button onClick={() => setModalActivo('eliminar')} className="admin-bar-btn">Eliminar Partido</button>
+                        <button onClick={() => setModalActivo('finalizar')} className="admin-bar-btn">Finalizar Partido</button>
                     </div>
-                </aside>
+                </div>
             )}
 
-            <div className="partidos-main-content">
-                <div className="partidos-contenedor">
-                    <h1 className="partidos-titulo">Partidos</h1>
+            <div className="partidos-layout-container">
+                {/* Sidebar Izquierdo: Filtros */}
+                <aside className="partidos-sidebar">
+                    <h2 className="sidebar-titulo">Filtros</h2>
+                    <h3 className="sidebar-seccion-titulo">Temporadas</h3>
+                    <ul className="sidebar-filter-list">
+                        {temporadas.map(temp => (
+                            <li 
+                                key={temp.id}
+                                className={`sidebar-filter-item ${temporadaId == temp.id ? 'active' : ''}`}
+                                onClick={() => setTemporadaId(temp.id)}
+                            >
+                                {temporadaId == temp.id && <span className="checkmark">✓</span>} {temp.nombre}
+                            </li>
+                        ))}
+                    </ul>
+                </aside>
 
-                    <div className="partidos-selectores">
-                        <div className="selector-wrapper">
-                            <select className="partidos-selector" value={temporadaId} onChange={(e) => setTemporadaId(e.target.value)}>
-                                {temporadas.map(temp => <option key={temp.id} value={temp.id}>{temp.nombre}</option>)}
-                            </select>
+                <div className="partidos-main-content">
+                    <div className="partidos-contenedor">
+                        <h1 className="partidos-titulo">Partidos</h1>
+
+                        <div className="partidos-selectores">
+                            <div className="selector-wrapper">
+                                <select className="partidos-selector" value={jornadaSeleccionada} onChange={(e) => setJornadaSeleccionada(e.target.value)} disabled={jornadas.length === 0}>
+                                    <option value="">Todas las jornadas</option>
+                                    {jornadas.map(j => <option key={j.jornada} value={j.jornada}>Jornada {j.jornada}</option>)}
+                                </select>
+                            </div>
                         </div>
-                        <div className="selector-wrapper">
-                            <select className="partidos-selector" value={jornadaSeleccionada} onChange={(e) => setJornadaSeleccionada(e.target.value)} disabled={jornadas.length === 0}>
-                                <option value="">Todas las jornadas</option>
-                                {jornadas.map(j => <option key={j.jornada} value={j.jornada}>Jornada {j.jornada}</option>)}
-                            </select>
-                        </div>
-                    </div>
 
                     <div className="partidos-lista">
                         {cargando ? (
@@ -263,7 +274,7 @@ const Partidos = () => {
                             partidos.map((partido, index) => (
                                 <div key={partido.id || index} className="partido-bloque">
                                     <p className="partido-meta">{formatearFechaHora(partido.fecha, partido.horario)}{partido.lugar ? ` — ${partido.lugar}` : ''}</p>
-                                    <Link to="/equipos" className="partido-tarjeta">
+                                    <Link to={`/partido/${partido.id}`} className="partido-tarjeta">
                                         <div className="partido-equipo partido-equipo--local">
                                             <span className="partido-nombre">{partido.local}</span>
                                             <div className="partido-logo-wrapper">
@@ -294,6 +305,7 @@ const Partidos = () => {
                         )}
                     </div>
                 </div>
+            </div>
             </div>
 
             {/* Modales de Admin */}

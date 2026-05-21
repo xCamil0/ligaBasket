@@ -4,60 +4,47 @@
 
 .partidos-page-wrapper {
     display: flex;
+    flex-direction: column;
+    width: 100%;
     min-height: 100vh;
     background: radial-gradient(circle at top right, #0a1b3a 0%, #021a32 100%);
-    padding-top: 40px;
+    color: white;
+}
+
+.partidos-layout-container {
+    display: flex;
+    flex: 1;
+    width: 100%;
 }
 
 /* === Sidebar === */
 .partidos-sidebar {
-    width: 280px;
-    background: rgba(13, 27, 42, 0.5);
-    border-right: 2px solid #f28b43;
-    border-top: 2px solid #f28b43;
-    border-radius: 20px;
-    padding: 3rem 2rem;
-    color: #f28b43;
-    flex-shrink: 0;
-    backdrop-filter: blur(10px);
-}
-
-.sidebar-section {
-    margin-bottom: 3rem;
-}
-
-.sidebar-title {
-    font-size: 1.7rem;
-    font-weight: 800;
-    margin-bottom: 1.5rem;
-    color: #f28b43;
-    letter-spacing: 1px;
-}
-
-.sidebar-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    width: 250px;
+    background-color: rgba(2, 26, 50, 0.65);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
-.sidebar-link-btn {
-    background: none;
-    border: none;
-    color: #cbd5e1;
-    font-size: 1.1rem;
-    font-weight: 500;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 5px 0;
-}
-
-.sidebar-link-btn:hover {
+.sidebar-titulo {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #f28b43;
-    transform: translateX(5px);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.sidebar-seccion-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* === Main Content === */
@@ -72,10 +59,11 @@
 }
 
 .partidos-titulo {
-    color: #f28b43;
+    color: #fafafa;
     font-size: 2.5rem;
     font-weight: 900;
-    margin-bottom: 2rem;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
     letter-spacing: 2px;
 }
 

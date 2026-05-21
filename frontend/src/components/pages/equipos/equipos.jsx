@@ -146,46 +146,42 @@ const Equipos = () => {
     }, [temporadaSeleccionada]);
 
     return (
-        <div className="equipos-page-container">
-            {/* Sidebar Izquierdo Naranja */}
-            <aside className="equipos-sidebar">
-                <div className="sidebar-section">
-                    <h3 className="sidebar-title">Equipos</h3>
-                    <ul className="sidebar-list">
-                        <li>
-                            <button
-                                onClick={() => setTemporadaSeleccionada(null)}
-                                className={`sidebar-link ${temporadaSeleccionada === null ? 'active' : ''}`}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
-                            >
-                                • Todos
-                            </button>
+        <div className="equipos-page-wrapper">
+            {/* Barra de Opciones Admin directamente debajo del navbar */}
+            {isAdmin && (
+                <div className="admin-options-bar">
+                    <span className="admin-bar-label">Opciones del Admin:</span>
+                    <div className="admin-bar-buttons">
+                        <button onClick={() => setModalActivo('crear')} className="admin-bar-btn">Crear Equipo</button>
+                        <button onClick={() => setModalActivo('actualizar')} className="admin-bar-btn">Actualizar Equipo</button>
+                        <button onClick={() => setModalActivo('eliminar')} className="admin-bar-btn">Eliminar Equipo</button>
+                    </div>
+                </div>
+            )}
+
+            <div className="equipos-page-container">
+                {/* Sidebar Izquierdo: Filtros */}
+                <aside className="equipos-sidebar">
+                    <h2 className="sidebar-titulo">Filtros</h2>
+                    <h3 className="sidebar-seccion-titulo">Temporadas</h3>
+                    <ul className="sidebar-filter-list">
+                        <li 
+                            className={`sidebar-filter-item ${temporadaSeleccionada === null ? 'active' : ''}`}
+                            onClick={() => setTemporadaSeleccionada(null)}
+                        >
+                            {temporadaSeleccionada === null && <span className="checkmark">✓</span>} Todos
                         </li>
                         {temporadas.map(temp => (
-                            <li key={temp.id}>
-                                <button
-                                    onClick={() => setTemporadaSeleccionada(temp.id)}
-                                    className={`sidebar-link ${temporadaSeleccionada === temp.id ? 'active' : ''}`}
-                                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
-                                >
-                                    • {temp.nombre}
-                                </button>
+                            <li 
+                                key={temp.id}
+                                className={`sidebar-filter-item ${temporadaSeleccionada === temp.id ? 'active' : ''}`}
+                                onClick={() => setTemporadaSeleccionada(temp.id)}
+                            >
+                                {temporadaSeleccionada === temp.id && <span className="checkmark">✓</span>} {temp.nombre}
                             </li>
                         ))}
                     </ul>
-                </div>
-
-                <div className="sidebar-section">
-                    {isAdmin ? (
-                        <ul className="sidebar-list">
-                            <h3 className="sidebar-title">Gestion de Equipos</h3>
-                            <li><button onClick={() => setModalActivo('crear')} className="sidebar-link admin-btn-link">• Crear</button></li>
-                            <li><button onClick={() => setModalActivo('actualizar')} className="sidebar-link admin-btn-link">• Actualizar</button></li>
-                            <li><button onClick={() => setModalActivo('eliminar')} className="sidebar-link admin-btn-link">• Eliminar</button></li>
-                        </ul>
-                    ) : null}
-                </div>
-            </aside>
+                </aside>
 
             <main className="equipos-main-content">
                 <div className="equipos-grid">
@@ -207,6 +203,7 @@ const Equipos = () => {
                     )}
                 </div>
             </main>
+            </div>
 
             {/* Modales de Administración */}
             {modalActivo && (

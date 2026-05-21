@@ -333,21 +333,56 @@ const eliminarPartido = async (req, res) => {
     }
 };
 
-/** Devuelve los jugadores de ambos equipos que participan en un partido. */
+/** Devuelve los jugadores de ambos equipos que participan en un partido con sus dorsales y puntos anotados. */
 const obtenerJugadoresDelPartido = async (req, res) => {
     const { id } = req.params;
     try {
         const resultado = await pool.query(`
-            SELECT j.id, j.nombre_apellido, j.equipo_id, e.nombre as nombre_equipo
+            SELECT 
+                j.id, 
+                j.nombre_apellido, 
+                j.dorsal,
+                j.equipo_id, 
+                e.nombre as nombre_equipo,
+                COALESCE(a.puntos_anotados, 0) as puntos
             FROM partidos p
             JOIN jugadores j ON (j.equipo_id = p.id_equipo_local OR j.equipo_id = p.id_equipo_visitante)
             JOIN equipos e ON j.equipo_id = e.id
+            LEFT JOIN anotaciones a ON a.id_jugador = j.id AND a.id_partido = p.id
             WHERE p.id = $1
+            ORDER BY j.nombre_apellido ASC
         `, [id]);
         res.json(resultado.rows);
     } catch (error) {
         console.error("Error al obtener jugadores del partido:", error);
         res.status(500).json({ error: "Error al obtener jugadores del encuentro" });
+    }
+};
+
+/** Obtiene un partido por su ID con nombres y logos de los equipos. */
+const obtenerPartidoPorId = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT 
+                p.*, 
+                e1.nombre AS local, 
+                e1.logo AS logo_local,
+                e2.nombre AS visitante, 
+                e2.logo AS logo_visitante
+            FROM partidos p
+            JOIN equipos e1 ON p.id_equipo_local = e1.id
+            JOIN equipos e2 ON p.id_equipo_visitante = e2.id
+            WHERE p.id = $1
+        `, [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Partido no encontrado" });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Error al obtener detalles del partido por ID:", error);
+        res.status(500).json({ error: "Error al obtener detalles del partido" });
     }
 };
 
@@ -409,5 +444,6 @@ module.exports = {
     eliminarPartido,
     obtenerJugadoresDelPartido,
     listarPartidosPorTemporada,
-    obtenerJornadas
+    obtenerJornadas,
+    obtenerPartidoPorId
 };

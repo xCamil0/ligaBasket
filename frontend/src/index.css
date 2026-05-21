@@ -7,3 +7,108 @@ body {
   padding: 0;
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* === Global Shared Admin Options Bar === */
+.admin-options-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-bottom: 2px solid #f28b43;
+    padding: 0.75rem 2rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-bar-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f28b43;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.admin-bar-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.admin-bar-btn {
+    background-color: transparent;
+    color: white;
+    border: 1px solid #f28b43;
+    padding: 0.4rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.admin-bar-btn:hover {
+    background-color: #f28b43;
+    color: #021a32;
+    box-shadow: 0 0 10px rgba(242, 139, 67, 0.4);
+}
+
+/* === Global Shared Sidebar Filter Styling === */
+.sidebar-filter-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-filter-item {
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: #cbd5e1;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: none;
+    border: none;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+}
+
+.sidebar-filter-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.sidebar-filter-item.active {
+    background-color: rgba(242, 139, 67, 0.15);
+    border-left: 3px solid #f28b43;
+    color: #f28b43;
+    font-weight: 600;
+}
+
+.checkmark {
+    font-weight: 800;
+}
+
+/* Responsive shared styles */
+@media (max-width: 768px) {
+    .admin-options-bar {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .admin-bar-buttons {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+    }
+}

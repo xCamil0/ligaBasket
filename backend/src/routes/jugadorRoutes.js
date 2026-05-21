@@ -5,14 +5,13 @@ const jugadorController = require('../controllers/jugadorController');
 const auth = require('../middlewares/authMiddlewares');
 const { validarRequeridos } = require('../middlewares/validaciones');
 
-router.get('/', auth.verificarToken, jugadorController.obtenerTodosLosJugadores);
-router.get('/agentes-libres', auth.verificarToken, jugadorController.obtenerAgentesLibres);
+router.get('/', jugadorController.obtenerTodosLosJugadores);
+router.get('/agentes-libres', jugadorController.obtenerAgentesLibres);
 router.get('/equipo/:equipo_id', 
     validarRequeridos(['equipo_id'], 'params'), 
     jugadorController.obtenerJugadoresPorEquipo
 );
 router.get('/:id/trayectoria', 
-    auth.verificarToken, 
     validarRequeridos(['id'], 'params'), 
     jugadorController.obtenerTrayectoriaJugador
 );

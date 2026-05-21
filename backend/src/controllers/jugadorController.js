@@ -64,25 +64,89 @@ const eliminarJugador = async (req, res) => {
     }
 };
 
-/** Lista todos los jugadores con nombre de equipo (LEFT JOIN para incluir agentes libres). */
+/** Lista todos los jugadores con nombre de equipo, puntos por temporada y trayectoria consolidada. */
 const obtenerTodosLosJugadores = async (req, res) => {
     try {
-        const result = await pool.query(`
+        // 1. Obtener todos los jugadores
+        const jugadoresRes = await pool.query(`
             SELECT 
                 j.id, 
                 j.nombre_apellido, 
                 j.categoria, 
                 j.dorsal, 
                 j.equipo_id,
-                e.nombre AS nombre_equipo 
+                e.nombre AS nombre_equipo,
+                e.logo AS logo_equipo
             FROM jugadores j
             LEFT JOIN equipos e ON j.equipo_id = e.id
             ORDER BY j.nombre_apellido ASC
         `);
-        res.json(result.rows);
+        const jugadores = jugadoresRes.rows;
+
+        // 2. Obtener puntos por temporada de todos los jugadores
+        const puntosRes = await pool.query(`
+            SELECT 
+                a.id_jugador,
+                t.id AS temporada_id,
+                t.nombre AS nombre_temporada,
+                SUM(a.puntos_anotados) AS puntos_totales
+            FROM anotaciones a
+            JOIN temporadas t ON a.temporada_id = t.id
+            GROUP BY a.id_jugador, t.id, t.nombre
+            ORDER BY t.fecha_inicio DESC
+        `);
+        const puntosRows = puntosRes.rows;
+
+        // 3. Obtener trayectoria (historial de fichajes) de todos los jugadores
+        const trayectoriaRes = await pool.query(`
+            SELECT 
+                hf.jugador_id,
+                COALESCE(e.nombre, 'Agente Libre') AS nombre_equipo,
+                t.nombre AS nombre_temporada,
+                hf.fecha_fichaje
+            FROM historial_fichajes hf
+            LEFT JOIN equipos e ON hf.equipo_id = e.id
+            JOIN temporadas t ON hf.temporada_id = t.id
+            ORDER BY hf.fecha_fichaje DESC
+        `);
+        const trayectoriaRows = trayectoriaRes.rows;
+
+        // Agrupar por jugador
+        const puntosPorJugador = {};
+        puntosRows.forEach(row => {
+            if (!puntosPorJugador[row.id_jugador]) {
+                puntosPorJugador[row.id_jugador] = [];
+            }
+            puntosPorJugador[row.id_jugador].push({
+                temporada_id: row.temporada_id,
+                nombre_temporada: row.nombre_temporada,
+                puntos: parseInt(row.puntos_totales, 10)
+            });
+        });
+
+        const trayectoriaPorJugador = {};
+        trayectoriaRows.forEach(row => {
+            if (!trayectoriaPorJugador[row.jugador_id]) {
+                trayectoriaPorJugador[row.jugador_id] = [];
+            }
+            trayectoriaPorJugador[row.jugador_id].push({
+                equipo: row.nombre_equipo,
+                temporada: row.nombre_temporada,
+                fecha: row.fecha_fichaje
+            });
+        });
+
+        // Consolidar
+        const resultado = jugadores.map(j => ({
+            ...j,
+            puntos_temporadas: puntosPorJugador[j.id] || [],
+            trayectoria: trayectoriaPorJugador[j.id] || []
+        }));
+
+        res.json(resultado);
     } catch (error) {
-        console.error("Error al obtener jugadores:", error.message);
-        res.status(500).json({ error: "Error al obtener jugadores" });
+        console.error("Error al obtener jugadores consolidado:", error);
+        res.status(500).json({ error: "Error al obtener jugadores consolidado" });
     }
 };
 

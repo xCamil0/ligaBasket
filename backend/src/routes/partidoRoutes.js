@@ -6,6 +6,7 @@ const auth = require('../middlewares/authMiddlewares');
 const { validarRequeridos } = require('../middlewares/validaciones');
 
 router.get('/', partidoController.obtenerTodosLosPartidos);
+router.get('/detalle/:id', partidoController.obtenerPartidoPorId);
 router.get('/:temporada_id/jornadas', 
     validarRequeridos(['temporada_id'], 'params'),
     partidoController.obtenerJornadas
