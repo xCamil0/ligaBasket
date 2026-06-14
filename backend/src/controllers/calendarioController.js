@@ -30,7 +30,7 @@ const generarCalendario = async (req, res) => {
 
         // Si hay cantidad impar de equipos, se agrega un equipo fantasma (descanso)
         if (equipos.length % 2 !== 0) {
-            equipos.push({ id: null, estadio: null });
+            return res.status(400).json({ error: "La cantidad de equipos debe ser par para generar el calendario" });
         }
 
         const numEquipos = equipos.length;
@@ -57,7 +57,7 @@ const generarCalendario = async (req, res) => {
                     await pool.query(
                         `INSERT INTO partidos 
                         (id_equipo_local, id_equipo_visitante, temporada_id, jornada, lugar, fecha, horario, finalizado, puntos_local, puntos_visitante) 
-                        VALUES ($1, $2, $3, $4, $5, $6, '18:00:00', false, NULL, NULL)`,
+                        VALUES ($1, $2, $3, $4, $5, $6, '20:00:00', false, NULL, NULL)`,
                         [local.id, visitante.id, temporada_id, jornada, local.estadio || 'Por definir', fechaJornada]
                     );
                 }
@@ -77,8 +77,9 @@ const generarCalendario = async (req, res) => {
 
 /** Elimina TODOS los partidos de la base de datos. */
 const eliminarPartidos = async (req, res) => {
+    const { temporada_id } = req.body;
     try {
-        await pool.query('DELETE FROM partidos');
+        await pool.query('DELETE FROM partidos where temporada_id = $1', [temporada_id]);
         res.json({ mensaje: "Todos los partidos eliminados" });
     } catch (error) {
         console.error(error);

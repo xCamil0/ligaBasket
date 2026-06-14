@@ -10,6 +10,9 @@ const Jugadores = () => {
     const [filtroSeleccionado, setFiltroSeleccionado] = useState('todos'); // 'todos', 'agentes-libres', o equipo_id
     const [cargando, setCargando] = useState(true);
 
+    // buscador de jugadores por nombre
+    const [busqueda, setBusqueda] = useState('');
+
     // Estado del Admin
     const [isAdmin, setIsAdmin] = useState(false);
     const [modalActivo, setModalActivo] = useState(null); // 'crear', 'actualizar', 'fichar', 'eliminar'
@@ -18,7 +21,7 @@ const Jugadores = () => {
     const [formData, setFormData] = useState({
         id: '', // Para editar / fichar / eliminar
         nombre_apellido: '',
-        categoria: 'Primera',
+        categoria: 'Profesional',
         dorsal: '',
         equipo_id: '',
         temporada_id: ''
@@ -60,7 +63,7 @@ const Jugadores = () => {
             setFormData({
                 id: jugador.id,
                 nombre_apellido: jugador.nombre_apellido,
-                categoria: jugador.categoria || 'Primera',
+                categoria: jugador.categoria || 'Profesional',
                 dorsal: jugador.dorsal || '',
                 equipo_id: jugador.equipo_id || '',
                 temporada_id: temporadas[0]?.id || ''
@@ -69,7 +72,7 @@ const Jugadores = () => {
             setFormData({
                 id: '',
                 nombre_apellido: '',
-                categoria: 'Primera',
+                categoria: 'Profesional',
                 dorsal: '',
                 equipo_id: '',
                 temporada_id: temporadas[0]?.id || ''
@@ -138,7 +141,7 @@ const Jugadores = () => {
     // Eliminar Jugador
     const eliminarJugador = async (e) => {
         e.preventDefault();
-        if (!window.confirm("¿Estás seguro de que deseas eliminar este jugador de forma permanente?")) return;
+        if (!window.confirm("¿Estas seguro de que deseas eliminar este jugador de forma permanente?")) return;
         try {
             await axios.delete(`http://localhost:5000/api/jugadores/${formData.id}`, headers());
             setModalActivo(null);
@@ -158,7 +161,7 @@ const Jugadores = () => {
                 ...prev,
                 id: jugador.id,
                 nombre_apellido: jugador.nombre_apellido,
-                categoria: jugador.categoria || 'Primera',
+                categoria: jugador.categoria || 'Profesional',
                 dorsal: jugador.dorsal || '',
                 equipo_id: jugador.equipo_id || '',
                 temporada_id: temporadas[0]?.id || ''
@@ -168,7 +171,7 @@ const Jugadores = () => {
                 ...prev,
                 id: '',
                 nombre_apellido: '',
-                categoria: 'Primera',
+                categoria: 'Profesional',
                 dorsal: '',
                 equipo_id: ''
             }));
@@ -177,22 +180,38 @@ const Jugadores = () => {
 
     // Filtrar la lista principal
     const jugadoresFiltrados = jugadores.filter(j => {
-        if (filtroSeleccionado === 'todos') return true;
+        const query = busqueda.toLowerCase();
+        const nombreCompleto = j.nombre_apellido ? j.nombre_apellido.toLowerCase() : '';
+        const nombreEquipo = j.nombre_equipo ? j.nombre_equipo.toLowerCase() : '';
         if (filtroSeleccionado === 'agentes-libres') return j.equipo_id === null;
-        return j.equipo_id === parseInt(filtroSeleccionado, 10);
+        return (filtroSeleccionado === 'todos' || j.equipo_id === parseInt(filtroSeleccionado, 10)) &&
+               (nombreCompleto.includes(query) || nombreEquipo.includes(query));
     });
 
+    // buscador de jugadores por nombre
     return (
         <div className="jugadores-page-wrapper">
-            {/* Barra de Opciones Admin directamente debajo del navbar */}
+            {/* Barra de Opciones Admin*/}
             {isAdmin && (
                 <div className="admin-options-bar">
-                    <span className="admin-bar-label">Opciones Admin:</span>
+                    <span className="admin-bar-label">OPCIONES ADMIN:</span>
                     <div className="admin-bar-buttons">
-                        <button onClick={() => abrirModal('crear')} className="admin-bar-btn">Crear Jugador</button>
-                        <button onClick={() => abrirModal('actualizar')} className="admin-bar-btn">Actualizar Jugador</button>
-                        <button onClick={() => abrirModal('fichar')} className="admin-bar-btn">Asignar Equipo</button>
-                        <button onClick={() => abrirModal('eliminar')} className="admin-bar-btn">Eliminar Jugador</button>
+                        <button onClick={() => abrirModal('crear')} className="admin-bar-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Crear Jugador
+                        </button>
+                        <button onClick={() => abrirModal('actualizar')} className="admin-bar-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            Actualizar Jugador
+                        </button>
+                        <button onClick={() => abrirModal('fichar')} className="admin-bar-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            Asignar Equipo
+                        </button>
+                        <button onClick={() => abrirModal('eliminar')} className="admin-bar-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            Eliminar Jugador
+                        </button>
                     </div>
                 </div>
             )}
@@ -229,9 +248,20 @@ const Jugadores = () => {
                 </aside>
 
                 {/* Contenido Principal: Grilla de Jugadores */}
+
                 <main className="jugadores-content">
                     <h1 className="content-titulo">Estadísticas de Jugadores</h1>
-                    <p className="content-subtitulo">Puntos Totales por Temporada</p>
+                    <p className="content-subtitulo">Puntos Totales por Temporada y Trayectoria</p>
+
+                    <div className="jugadores-buscador">
+                        <input 
+                            type="text" 
+                            placeholder="Buscar Jugador" 
+                            value={busqueda} 
+                            onChange= {e => setBusqueda(e.target.value)}
+                            className="buscador-input"
+                        />
+                    </div>
 
                     {cargando ? (
                         <div className="jugadores-cargando">
@@ -243,9 +273,6 @@ const Jugadores = () => {
                             {jugadoresFiltrados.map(jugador => (
                                 <div key={jugador.id} className="jugador-card-premium">
                                     <div className="jugador-card-header">
-                                        <div className="jugador-avatar-circle">
-                                            <span className="avatar-placeholder">👤</span>
-                                        </div>
                                         <div className="jugador-identidad">
                                             <h3 className="jugador-nombre">{jugador.nombre_apellido}</h3>
                                             <p className="jugador-team-dorsal">
@@ -260,7 +287,7 @@ const Jugadores = () => {
                                                     className="jugador-card-team-logo"
                                                 />
                                             ) : (
-                                                <div className="jugador-card-team-logo placeholder">🏀</div>
+                                                <div className="jugador-card-team-logo placeholder"></div>
                                             )}
                                         </div>
                                     </div>
@@ -305,7 +332,7 @@ const Jugadores = () => {
                         </div>
                     ) : (
                         <div className="jugadores-grid-vacia">
-                            <p>No se encontraron jugadores que coincidan con el filtro seleccionado.</p>
+                            <p>Debes elegir un filtro para ver los jugadores por equipo.</p>
                         </div>
                     )}
                 </main>
@@ -329,19 +356,6 @@ const Jugadores = () => {
                                     className="admin-input" 
                                     required 
                                 />
-
-                                <label>Categoría</label>
-                                <select 
-                                    name="categoria" 
-                                    value={formData.categoria} 
-                                    onChange={handleInputChange} 
-                                    className="admin-input"
-                                >
-                                    <option value="Primera">Primera</option>
-                                    <option value="Segunda">Segunda</option>
-                                    <option value="Juvenil">Juvenil</option>
-                                    <option value="Amistoso">Amistoso</option>
-                                </select>
 
                                 <label>Dorsal (Número de Camiseta)</label>
                                 <input 
@@ -368,7 +382,7 @@ const Jugadores = () => {
                                 <label>Selecciona Jugador *</label>
                                 <select 
                                     value={formData.id} 
-                                    onChange={handleJugadorSelectChange} 
+                                    onChange={handleJugadorSelectChange}
                                     className="admin-input" 
                                     required
                                 >
@@ -389,19 +403,6 @@ const Jugadores = () => {
                                             className="admin-input" 
                                             required 
                                         />
-
-                                        <label>Categoría</label>
-                                        <select 
-                                            name="categoria" 
-                                            value={formData.categoria} 
-                                            onChange={handleInputChange} 
-                                            className="admin-input"
-                                        >
-                                            <option value="Primera">Primera</option>
-                                            <option value="Segunda">Segunda</option>
-                                            <option value="Juvenil">Juvenil</option>
-                                            <option value="Amistoso">Amistoso</option>
-                                        </select>
 
                                         <label>Dorsal (Número de Camiseta)</label>
                                         <input 

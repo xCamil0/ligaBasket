@@ -189,7 +189,8 @@ const obtenerDetalleEquipo = async (req, res) => {
 
         const partidosRes = await pool.query(`
             SELECT p.*, 
-            el.nombre AS local, ev.nombre AS visitante
+            el.nombre AS local, ev.nombre AS visitante,
+            el.logo AS logo_local, ev.logo AS logo_visitante
             FROM partidos p
             JOIN equipos el ON p.id_equipo_local = el.id
             JOIN equipos ev ON p.id_equipo_visitante = ev.id

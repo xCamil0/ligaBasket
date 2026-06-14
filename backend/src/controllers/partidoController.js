@@ -427,7 +427,7 @@ const obtenerJornadas = async (req, res) => {
             'SELECT DISTINCT jornada FROM partidos WHERE temporada_id = $1 AND jornada > 0 ORDER BY jornada ASC',
             [temporada_id]
         );
-        if (resultado.rows.length === 0) return res.status(404).json({ error: "No se encontraron jornadas" });
+        if (resultado.rows.length === 0) return res.json([]);
         res.json(resultado.rows);
     } catch (error) {
         console.error("Error al obtener jornadas:", error);

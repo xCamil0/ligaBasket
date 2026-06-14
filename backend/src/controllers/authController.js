@@ -40,7 +40,7 @@ const login = async (req, res) => {
 
 /** Registra un nuevo usuario admin (requiere token). */
 const register = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, Email } = req.body;
 
     try {
         const existingUser = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
@@ -52,8 +52,8 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = await pool.query(
-            'INSERT INTO usuarios (username, password) VALUES ($1, $2) RETURNING *',
-            [username, hashedPassword]
+            'INSERT INTO usuarios (username, password, Email) VALUES ($1, $2, $3) RETURNING *',
+            [username, hashedPassword, Email]
         );
 
         res.status(201).json({ mensaje: "Registro exitoso", usuario: newUser.rows[0] });
@@ -80,7 +80,7 @@ const eliminarAdmin = async (req, res) => {
     const idNumerico = Number(id);
 
     try {
-        if (idNumerico === 1) {
+        if (idNumerico === 2) {
             return res.status(403).json({ error: "No se puede eliminar el usuario admin" });
         }
 
@@ -104,11 +104,11 @@ const eliminarAdmin = async (req, res) => {
 /** Actualiza username y contraseña de un usuario. Protege al admin principal (ID 1). */
 const actualizarAdmin = async (req, res) => {
     const { id } = req.params;
-    const { username, password } = req.body;
+    const { username, password, Email } = req.body;
     const idNumerico = Number(id);
 
     try {
-        if (idNumerico === 1) {
+        if (idNumerico === 2) {
             return res.status(403).json({ error: "No se puede actualizar el usuario admin" });
         }
 
@@ -121,8 +121,8 @@ const actualizarAdmin = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const updatedUser = await pool.query(
-            'UPDATE usuarios SET username = $1, password = $2 WHERE id = $3 RETURNING *',
-            [username, hashedPassword, idNumerico]
+            'UPDATE usuarios SET username = $1, password = $2, Email = $3 WHERE id = $4 RETURNING *',
+            [username, hashedPassword, Email, idNumerico]
         );
 
         res.json({ mensaje: "Usuario actualizado", usuario: updatedUser.rows[0] });

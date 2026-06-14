@@ -1,7 +1,3 @@
-/**
- * Tabla.jsx — Página de tabla de posiciones.
- * Muestra PJ, G, E, P, PF, PC, DP, PTS por equipo en la temporada seleccionada.
- */
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Tabla.css';
@@ -89,43 +85,42 @@ const Standings = () => {
               <thead className="cabecera-columnas">
                 <tr>
                   <th className="celda-cabecera-centro">Pos</th>
-                  <th className="celda-cabecera"></th>
                   <th className="celda-cabecera">Equipo</th>
                   <th className="celda-cabecera-centro">PJ</th>
                   <th className="celda-cabecera-centro">G</th>
                   <th className="celda-cabecera-centro">E</th>
                   <th className="celda-cabecera-centro">P</th>
-                  <th className="celda-cabecera-centro">PF</th>
-                  <th className="celda-cabecera-centro">PC</th>
+                  <th className="celda-cabecera-centro ocultar-movil">PF</th>
+                  <th className="celda-cabecera-centro ocultar-movil">PC</th>
                   <th className="celda-cabecera-centro">DP</th>
                   <th className="celda-cabecera-centro">PTS</th>
                 </tr>
               </thead>
               <tbody className="cuerpo-tabla">
                 {cargando ? (
-                  <tr><td colSpan="11" className="celda-vacia">Cargando...</td></tr>
+                  <tr><td colSpan="10" className="celda-vacia">Cargando...</td></tr>
                 ) : tabla.length > 0 ? (
                   tabla.map((fila, index) => (
                     <tr key={fila.id} className="fila-tabla">
                       <td className="celda-posicion">{index + 1}</td>
-                      <td className="celda-logo">
-                        <img src={`http://localhost:5000${fila.logo}`} alt={fila.nombre} className="logo-equipo-tabla" />
-                      </td>
                       <td className="celda-equipo">
-                        <a href={`/equipos/${fila.id}/detalle`} className="enlace-equipo">{fila.nombre}</a>
+                        <div className="equipo-info-celda">
+                          <img src={`http://localhost:5000${fila.logo}`} alt={fila.nombre} className="logo-equipo-tabla" />
+                          <a href={`/equipos/${fila.id}/detalle`} className="enlace-equipo">{fila.nombre}</a>
+                        </div>
                       </td>
                       <td className="celda-estadistica">{fila.pj}</td>
                       <td className="celda-estadistica">{fila.g}</td>
                       <td className="celda-estadistica">{fila.e}</td>
                       <td className="celda-estadistica">{fila.p}</td>
-                      <td className="celda-estadistica">{fila.pf}</td>
-                      <td className="celda-estadistica">{fila.pc}</td>
+                      <td className="celda-estadistica ocultar-movil">{fila.pf}</td>
+                      <td className="celda-estadistica ocultar-movil">{fila.pc}</td>
                       <td className="celda-estadistica">{fila.dp}</td>
                       <td className="celda-puntos">{fila.pts}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="11" className="celda-vacia">No hay datos disponibles para esta temporada.</td></tr>
+                  <tr><td colSpan="10" className="celda-vacia">No hay datos disponibles para esta temporada.</td></tr>
                 )}
               </tbody>
             </table>

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Standings from './components/pages/tabla/Tabla';
+import Tabla from './components/pages/tabla/Tabla';
 import Scoreboard from './components/scoreboard/scoreboard';
 import Navbar from './components/navbar/navbar';
 import Equipos from './components/pages/equipos/equipos';
@@ -8,6 +8,7 @@ import Pichichi from './components/pages/pichichi/pichichi';
 import Partidos from './components/pages/partidos/partidos';
 import DetallePartido from './components/pages/detallePartido/DetallePartido';
 import Jugadores from './components/pages/jugadores/Jugadores';
+import Admin from './components/pages/Admin/Admin';
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
         <Route path="/" element={
           <>
             <Scoreboard />
-            <Standings />
+            <Tabla />
           </>
         } />
         <Route path="/equipos" element={<Equipos />} />
@@ -26,6 +27,7 @@ function App() {
         <Route path="/partidos" element={<Partidos />} />
         <Route path="/partido/:id" element={<DetallePartido />} />
         <Route path="/jugadores" element={<Jugadores />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </Router>
   );

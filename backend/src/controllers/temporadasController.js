@@ -120,6 +120,34 @@ const asignarEquipos = async (req, res) => {
     }
 };
 
+const desasignarEquipos = async (req, res) => {
+    const { temporada_id, equipos_ids } = req.body;
+
+    if (!temporada_id || !Array.isArray(equipos_ids) || equipos_ids.length === 0) {
+        return res.status(400).json({ error: "Debes enviar la temporada y una lista de equipos." });
+    }
+
+    try {
+        await pool.query('BEGIN');
+
+        const consultas = equipos_ids.map(equipo_id =>
+            pool.query(
+                'DELETE FROM temporada_equipos WHERE temporada_id = $1 AND equipo_id = $2',
+                [temporada_id, equipo_id]
+            )
+        );
+
+        await Promise.all(consultas);
+        await pool.query('COMMIT');
+
+        res.json({ mensaje: `${equipos_ids.length} equipos desasignados correctamente de la temporada.` });
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error(error);
+        res.status(500).json({ error: "Error al desasignar los equipos." });
+    }
+};
+
 /** Devuelve los equipos activos inscritos en una temporada específica (por param). */
 const obtenerEquipos = async (req, res) => {
     const { temporada_id } = req.params;
@@ -139,4 +167,4 @@ const obtenerEquipos = async (req, res) => {
     }
 };
 
-module.exports = { listar, crear, eliminar, actualizar, actual, asignarEquipos, obtenerEquipos };
+module.exports = { listar, crear, eliminar, actualizar, actual, asignarEquipos, desasignarEquipos, obtenerEquipos };

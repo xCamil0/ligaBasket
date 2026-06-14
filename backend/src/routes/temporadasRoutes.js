@@ -1,7 +1,7 @@
 /** temporadasRoutes.js — Rutas de temporadas (/api/temporadas). */
 const express = require('express');
 const router = express.Router();
-const { listar, crear, eliminar, actualizar, actual, asignarEquipos, obtenerEquipos } = require('../controllers/temporadasController');
+const { listar, crear, eliminar, actualizar, actual, asignarEquipos, obtenerEquipos, desasignarEquipos } = require('../controllers/temporadasController');
 const auth = require('../middlewares/authMiddlewares');
 const { validarRequeridos } = require('../middlewares/validaciones');
 
@@ -30,6 +30,11 @@ router.put('/:id',
     auth.verificarToken,
     validarRequeridos(['id'], 'params'),
     actualizar
+);
+router.delete('/equipos',
+    auth.verificarToken,
+    validarRequeridos(['temporada_id', 'equipos_ids']),
+    desasignarEquipos
 );
 router.delete('/:id',
     auth.verificarToken,

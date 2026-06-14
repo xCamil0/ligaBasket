@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Scoreboard.css';
+import './scoreboard.css';
 
 const Scoreboard = () => {
 
@@ -65,8 +65,6 @@ const Scoreboard = () => {
       groups[dateStr].push(game);
     });
     
-    // Si estamos mostrando partidos jugados, queremos las fechas más recientes primero (descendente)
-    // Si son próximos, las fechas más cercanas primero (ascendente)
     return Object.entries(groups).sort((a, b) => {
       const fechaA = new Date(a[0]);
       const fechaB = new Date(b[0]);
@@ -78,14 +76,14 @@ const Scoreboard = () => {
     if (dateString === 'TBD') return '';
     const date = new Date(dateString);
     date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-    return date.toLocaleDateString('es-CO', { weekday: 'short' }).toUpperCase();
+    return date.toLocaleDateString('es-CO', { weekday: 'short' }).toUpperCase().replace('.', '');
   };
 
   const obtenerNombreMes = (dateString) => {
     if (dateString === 'TBD') return '';
     const date = new Date(dateString);
     date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-    return date.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase();
+    return date.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase().replace('.', '');
   };
 
   const obtenerNumeroDia = (dateString) => {
@@ -99,8 +97,13 @@ const Scoreboard = () => {
 
   return (
     <div className="marcador-general">
-      <div className="marcador-titulo">
-        {esJugados ? 'ÚLTIMOS RESULTADOS' : 'PRÓXIMOS PARTIDOS'}
+      <div className="marcador-cabecera">
+        <span className="marcador-titulo">
+          {esJugados ? 'ÚLTIMOS RESULTADOS' : 'PRÓXIMOS PARTIDOS'}
+        </span>
+        <a href="/partidos" className="ver-todos-link">
+          Ver todos <svg className="ver-todos-arrow" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
       </div>
       <div className="marcador-container">
         {partidosAgrupadosPorFecha.map(([date, games]) => (
@@ -110,44 +113,67 @@ const Scoreboard = () => {
               <span className="nombre-mes">{obtenerNombreMes(date)}</span>
               <span className="numero-dia">{obtenerNumeroDia(date)}</span>
             </div>
-            {games.map((partido) => {
-              const equipoLocal = equipos.find((e) => e.id === partido.id_equipo_local);
-              const equipoVisitante = equipos.find((e) => e.id === partido.id_equipo_visitante);
+            <div className="grupo-tarjetas">
+              {games.map((partido) => {
+                const equipoLocal = equipos.find((e) => e.id === partido.id_equipo_local);
+                const equipoVisitante = equipos.find((e) => e.id === partido.id_equipo_visitante);
 
-              // Helper for formatting time from ISO date string
-              const formatTime = (isoString) => {
-                if (!isoString) return 'TBD';
-                const d = new Date(isoString);
-                return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
-              };
+                const formatTime = (isoString) => {
+                  if (!isoString) return 'TBD';
+                  const d = new Date(isoString);
+                  return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
+                };
 
-              return (
-                <div
-                  key={partido.id}
-                  className="tarjeta-partido"
-                  onClick={() => window.location.href = `/partido/${partido.id}`}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="estado-partido">
-                    {partido.finalizado ? 'FINAL' : formatTime(partido.fecha)}
+                return (
+                  <div
+                    key={partido.id}
+                    className="tarjeta-partido-rediseño"
+                    onClick={() => window.location.href = `/partido/${partido.id}`}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="partido-hora">
+                      {partido.finalizado ? 'FINAL' : formatTime(partido.fecha)}
+                    </div>
+                    
+                    <div className="partido-equipo-fila">
+                      <div className="partido-equipo-izquierda">
+                        {equipoLocal ? (
+                          <img 
+                            src={`http://localhost:5000${equipoLocal.logo}`} 
+                            alt={equipoLocal.nombre} 
+                            className="partido-equipo-logo" 
+                          />
+                        ) : <div className="partido-equipo-logo-placeholder" />}
+                        <span className="partido-equipo-nombre">
+                          {equipoLocal ? equipoLocal.nombre : 'Cargando...'}
+                        </span>
+                      </div>
+                      <span className="partido-equipo-puntos">
+                        {partido.finalizado && partido.puntos_local !== null ? partido.puntos_local : '-'}
+                      </span>
+                    </div>
+
+                    <div className="partido-equipo-fila">
+                      <div className="partido-equipo-izquierda">
+                        {equipoVisitante ? (
+                          <img 
+                            src={`http://localhost:5000${equipoVisitante.logo}`} 
+                            alt={equipoVisitante.nombre} 
+                            className="partido-equipo-logo" 
+                          />
+                        ) : <div className="partido-equipo-logo-placeholder" />}
+                        <span className="partido-equipo-nombre">
+                          {equipoVisitante ? equipoVisitante.nombre : 'Cargando...'}
+                        </span>
+                      </div>
+                      <span className="partido-equipo-puntos">
+                        {partido.finalizado && partido.puntos_visitante !== null ? partido.puntos_visitante : '-'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="fila-equipo">
-                    <span className="nombre-equipo">
-                      {equipoLocal ? <span className="logo-equipo"><img src={`http://localhost:5000${equipoLocal.logo}`} alt={`${equipoLocal.nombre} logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></span> : null}
-                      {equipoLocal ? equipoLocal.nombre : 'Cargando...'}
-                    </span>
-                    <span className="puntos">{partido.puntos_local !== null ? partido.puntos_local : '-'}</span>
-                  </div>
-                  <div className="fila-equipo">
-                    <span className="nombre-equipo">
-                      {equipoVisitante ? <span className="logo-equipo"><img src={`http://localhost:5000${equipoVisitante.logo}`} alt={`${equipoVisitante.nombre} logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></span> : null}
-                      {equipoVisitante ? equipoVisitante.nombre : 'Cargando...'}
-                    </span>
-                    <span className="puntos">{partido.puntos_visitante !== null ? partido.puntos_visitante : '-'}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ))}
       </div>

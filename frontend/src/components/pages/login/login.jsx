@@ -11,9 +11,9 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  /** Envía las credenciales y guarda el token si el login es exitoso. */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', {
         username,
