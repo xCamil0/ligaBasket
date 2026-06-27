@@ -158,34 +158,3 @@ table tbody tr:hover {
         padding-bottom: 0.25rem;
     }
 }
-
-/* === Custom Notification and Modal Animations === */
-@keyframes slideIn {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeScaleIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-toast-in {
-  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-modal-in {
-  animation: fadeScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
