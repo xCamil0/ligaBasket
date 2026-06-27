@@ -1,19 +1,17 @@
-/**
- * login.jsx — Modal de inicio de sesión.
- * Envía credenciales al backend y almacena el JWT en localStorage.
- */
 import { useState } from 'react';
 import axios from 'axios';
-import './login.css';
+import { X, LogIn, ShieldAlert } from 'lucide-react';
 
 const LoginModal = ({ onClose, onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', {
         username,
@@ -28,35 +26,68 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
       } else {
         setError("Error al iniciar sesión");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="login-modal-overlay">
-      <div className="login-modal">
-        <button className="close-btn" onClick={onClose}>&times;</button>
-        <h2>Iniciar Sesión</h2>
-        {error && <p className="error-msg">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Usuario</label>
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex justify-center items-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-800/80 p-8 rounded-2xl w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <button 
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-800/50 rounded-lg cursor-pointer" 
+          onClick={onClose}
+          aria-label="Cerrar modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-3 border border-orange-500/20">
+            <LogIn className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Iniciar Sesión</h2>
+          <p className="text-slate-400 text-xs mt-1">Acceso administrativo de la liga</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-xl text-center text-sm mb-5 flex items-center justify-center gap-2">
+            <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Usuario</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-950/80 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium placeholder-slate-600"
+              placeholder="Ej. admin"
               required
             />
           </div>
-          <div className="form-group">
-            <label>Contraseña</label>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-950/80 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium placeholder-slate-700"
+              placeholder="••••••••"
               required
             />
           </div>
-          <button type="submit" className="submit-btn">Ingresar</button>
+
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-slate-950 font-bold rounded-xl shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mt-6"
+          >
+            {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+          </button>
         </form>
       </div>
     </div>

@@ -1,13 +1,40 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
+@theme {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f3f9;
+  --color-slate-200: #cbd1e6;
+  --color-slate-300: #a7aecd;
+  --color-slate-400: #7b84b8;
+  --color-slate-500: #575e8f;
+  --color-slate-600: #3c4166;
+  --color-slate-750: #22253b;
+  --color-slate-800: #1a1d2e;
+  --color-slate-850: #141624;
+  --color-slate-900: #0d0f17;
+  --color-slate-950: #06070a;
+
+  --color-orange-500: #ff5500;
+  --color-orange-600: #d64700;
+  
+  --color-blue-500: #0052ff;
+  --color-blue-600: #0041cc;
+
+  --color-red-500: #ff3b30;
+  --color-red-600: #dc2626;
+
+  --color-emerald-400: #10b981;
+  --color-emerald-500: #059669;
+}
+
 :root {
-  --bg-gradient: radial-gradient(circle at 50% 0%, #0d1e36 0%, #030813 100%);
-  --brand-orange: #ff5f35;
-  --brand-orange-grad: linear-gradient(135deg, #ff6c37 0%, #ff3d03 100%);
-  --brand-glow: rgba(255, 95, 53, 0.15);
+  --bg-gradient: radial-gradient(circle at 50% 0%, #2d3875 0%, #12123b 100%);
+  --brand-orange: #ff5500;
+  --brand-orange-grad: linear-gradient(135deg, #ff7700 0%, #ff3300 100%);
+  --brand-glow: rgba(255, 85, 0, 0.2);
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-muted: #8e95b8;
 }
 
 body {
@@ -17,68 +44,54 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  overflow-x: hidden;
 }
 
-/* === Global Shared Admin Options Bar === */
-.admin-options-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: rgba(0, 16, 33, 0.65);
-    border-bottom: 1px solid rgba(255, 82, 29, 0.35);
-    padding: 0.85rem 2rem;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-    width: 100%;
-    box-sizing: border-box;
+/* === Global Fluid Transitions === */
+.group, a, button, select, input, tr, li, img {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.admin-bar-label {
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: #ff521d;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+/* === Custom Scrollbars === */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.admin-bar-buttons {
-    display: flex;
-    gap: 0.85rem;
+::-webkit-scrollbar-track {
+  background: rgba(6, 7, 10, 0.5);
+  border-radius: 4px;
 }
 
-.admin-bar-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background-color: rgba(2, 26, 50, 0.45);
-    color: #ffffff;
-    border: 1px solid rgba(255, 82, 29, 0.6);
-    padding: 7px 16px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s ease;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 85, 0, 0.15);
+  border-radius: 4px;
+  border: 2px solid #06070a;
 }
 
-.admin-bar-btn svg {
-    color: #ff521d;
-    flex-shrink: 0;
-    transition: all 0.25s ease;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 85, 0, 0.35);
 }
 
-.admin-bar-btn:hover {
-    background-color: rgba(255, 82, 29, 0.15);
-    color: #ffffff;
-    border-color: #ff521d;
-    box-shadow: 0 0 12px rgba(255, 82, 29, 0.3);
-    transform: translateY(-1px);
+/* === Form Element Focus Adjustments === */
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(255, 85, 0, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(255, 85, 0, 0.15) !important;
+  outline: none !important;
 }
 
-.admin-bar-btn:hover svg {
-    color: #ffffff;
-    transform: rotate(15deg) scale(1.05);
+/* === Table Styling Overrides for Sports feel === */
+table thead tr {
+  background: linear-gradient(90deg, rgba(13, 15, 23, 0.8) 0%, rgba(6, 7, 10, 0.6) 100%) !important;
+  border-bottom: 2px solid rgba(255, 85, 0, 0.1) !important;
+}
+
+table tbody tr {
+  border-bottom: 1px solid rgba(26, 29, 46, 0.4) !important;
+}
+
+table tbody tr:hover {
+  background-color: rgba(255, 85, 0, 0.02) !important;
 }
 
 /* === Global Shared Sidebar Filter Styling === */
@@ -92,38 +105,38 @@ body {
 }
 
 .sidebar-filter-item {
-    padding: 0.75rem 1.25rem;
-    border-radius: 12px;
+    padding: 0.8rem 1.35rem;
+    border-radius: 14px;
     cursor: pointer;
     font-weight: 600;
     color: var(--text-muted);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid rgba(255, 255, 255, 0.02);
+    background: rgba(13, 15, 23, 0.2);
+    border: 1px solid rgba(26, 29, 46, 0.5);
     text-align: left;
     width: 100%;
     font-family: inherit;
 }
 
 .sidebar-filter-item:hover {
-    background: rgba(255, 95, 53, 0.05);
-    border-color: rgba(255, 95, 53, 0.15);
+    background: rgba(255, 85, 0, 0.05);
+    border-color: rgba(255, 85, 0, 0.2);
     color: var(--text-main);
+    padding-left: 1.5rem;
 }
 
 .sidebar-filter-item.active {
     background: var(--brand-orange-grad);
     border-color: transparent;
-    color: #030813;
-    font-weight: 700;
-    box-shadow: 0 4px 15px var(--brand-glow);
+    color: #040407;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(255, 85, 0, 0.25);
 }
 
 .sidebar-filter-item.active .checkmark {
-    color: #030813;
+    color: #040407;
 }
 
 .checkmark {
@@ -144,4 +157,35 @@ body {
         overflow-x: auto;
         padding-bottom: 0.25rem;
     }
+}
+
+/* === Custom Notification and Modal Animations === */
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeScaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-in {
+  animation: fadeScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

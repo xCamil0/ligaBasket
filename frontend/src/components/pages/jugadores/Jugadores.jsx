@@ -1,48 +1,26 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Jugadores.css';
+import { Users, Search, Award, Activity, HelpCircle } from 'lucide-react';
 
 const Jugadores = () => {
     // Datos generales
     const [jugadores, setJugadores] = useState([]);
     const [equipos, setEquipos] = useState([]);
-    const [temporadas, setTemporadas] = useState([]);
     const [filtroSeleccionado, setFiltroSeleccionado] = useState('todos'); // 'todos', 'agentes-libres', o equipo_id
     const [cargando, setCargando] = useState(true);
 
     // buscador de jugadores por nombre
     const [busqueda, setBusqueda] = useState('');
 
-    // Estado del Admin
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [modalActivo, setModalActivo] = useState(null); // 'crear', 'actualizar', 'fichar', 'eliminar'
-
-    // Formulario de datos
-    const [formData, setFormData] = useState({
-        id: '', // Para editar / fichar / eliminar
-        nombre_apellido: '',
-        categoria: 'Profesional',
-        dorsal: '',
-        equipo_id: '',
-        temporada_id: ''
-    });
-
-    const headers = () => {
-        const token = localStorage.getItem('token');
-        return { headers: { Authorization: `Bearer ${token}` } };
-    };
-
     const cargarDatos = async () => {
         try {
             setCargando(true);
-            const [resJugadores, resEquipos, resTemporadas] = await Promise.all([
+            const [resJugadores, resEquipos] = await Promise.all([
                 axios.get('http://localhost:5000/api/jugadores'),
-                axios.get('http://localhost:5000/api/equipos'),
-                axios.get('http://localhost:5000/api/temporadas')
+                axios.get('http://localhost:5000/api/equipos')
             ]);
             setJugadores(resJugadores.data);
             setEquipos(resEquipos.data);
-            setTemporadas(resTemporadas.data);
         } catch (error) {
             console.error("Error al cargar datos de jugadores:", error);
         } finally {
@@ -52,131 +30,7 @@ const Jugadores = () => {
 
     useEffect(() => {
         cargarDatos();
-        const token = localStorage.getItem('token');
-        if (token) setIsAdmin(true);
     }, []);
-
-    // Limpiar formulario al abrir modal
-    const abrirModal = (tipo, jugador = null) => {
-        setModalActivo(tipo);
-        if (jugador) {
-            setFormData({
-                id: jugador.id,
-                nombre_apellido: jugador.nombre_apellido,
-                categoria: jugador.categoria || 'Profesional',
-                dorsal: jugador.dorsal || '',
-                equipo_id: jugador.equipo_id || '',
-                temporada_id: temporadas[0]?.id || ''
-            });
-        } else {
-            setFormData({
-                id: '',
-                nombre_apellido: '',
-                categoria: 'Profesional',
-                dorsal: '',
-                equipo_id: '',
-                temporada_id: temporadas[0]?.id || ''
-            });
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Registrar Jugador
-    const registrarJugador = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.post('http://localhost:5000/api/jugadores', {
-                nombre_apellido: formData.nombre_apellido,
-                categoria: formData.categoria,
-                dorsal: formData.dorsal ? parseInt(formData.dorsal, 10) : null,
-                equipo_id: formData.equipo_id ? parseInt(formData.equipo_id, 10) : null
-            }, headers());
-            setModalActivo(null);
-            cargarDatos();
-        } catch (error) {
-            console.error("Error al registrar jugador:", error);
-            alert(error.response?.data?.error || "Error al registrar jugador");
-        }
-    };
-
-    // Actualizar Datos de Jugador
-    const actualizarJugador = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.put(`http://localhost:5000/api/jugadores/${formData.id}`, {
-                nombre_apellido: formData.nombre_apellido,
-                categoria: formData.categoria,
-                dorsal: formData.dorsal ? parseInt(formData.dorsal, 10) : null,
-                equipo_id: formData.equipo_id ? parseInt(formData.equipo_id, 10) : null
-            }, headers());
-            setModalActivo(null);
-            cargarDatos();
-        } catch (error) {
-            console.error("Error al actualizar jugador:", error);
-            alert(error.response?.data?.error || "Error al actualizar jugador");
-        }
-    };
-
-    // Asignar Equipo (Fichar / Liberar)
-    const gestionarFichaje = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.post('http://localhost:5000/api/equipos/fichar', {
-                jugador_id: parseInt(formData.id, 10),
-                equipo_id: formData.equipo_id ? parseInt(formData.equipo_id, 10) : null,
-                temporada_id: parseInt(formData.temporada_id, 10)
-            }, headers());
-            setModalActivo(null);
-            cargarDatos();
-        } catch (error) {
-            console.error("Error al gestionar fichaje:", error);
-            alert(error.response?.data?.error || "Error al gestionar fichaje");
-        }
-    };
-
-    // Eliminar Jugador
-    const eliminarJugador = async (e) => {
-        e.preventDefault();
-        if (!window.confirm("¿Estas seguro de que deseas eliminar este jugador de forma permanente?")) return;
-        try {
-            await axios.delete(`http://localhost:5000/api/jugadores/${formData.id}`, headers());
-            setModalActivo(null);
-            cargarDatos();
-        } catch (error) {
-            console.error("Error al eliminar jugador:", error);
-            alert(error.response?.data?.error || "Error al eliminar jugador");
-        }
-    };
-
-    // Rellenar formulario cuando cambia el jugador seleccionado en Editar/Fichar/Eliminar modals
-    const handleJugadorSelectChange = (e) => {
-        const id = e.target.value;
-        const jugador = jugadores.find(j => j.id === parseInt(id, 10));
-        if (jugador) {
-            setFormData(prev => ({
-                ...prev,
-                id: jugador.id,
-                nombre_apellido: jugador.nombre_apellido,
-                categoria: jugador.categoria || 'Profesional',
-                dorsal: jugador.dorsal || '',
-                equipo_id: jugador.equipo_id || '',
-                temporada_id: temporadas[0]?.id || ''
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                id: '',
-                nombre_apellido: '',
-                categoria: 'Profesional',
-                dorsal: '',
-                equipo_id: ''
-            }));
-        }
-    };
 
     // Filtrar la lista principal
     const jugadoresFiltrados = jugadores.filter(j => {
@@ -188,324 +42,184 @@ const Jugadores = () => {
                (nombreCompleto.includes(query) || nombreEquipo.includes(query));
     });
 
-    // buscador de jugadores por nombre
     return (
-        <div className="jugadores-page-wrapper">
-            {/* Barra de Opciones Admin*/}
-            {isAdmin && (
-                <div className="admin-options-bar">
-                    <span className="admin-bar-label">OPCIONES ADMIN:</span>
-                    <div className="admin-bar-buttons">
-                        <button onClick={() => abrirModal('crear')} className="admin-bar-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            Crear Jugador
-                        </button>
-                        <button onClick={() => abrirModal('actualizar')} className="admin-bar-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                            Actualizar Jugador
-                        </button>
-                        <button onClick={() => abrirModal('fichar')} className="admin-bar-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                            Asignar Equipo
-                        </button>
-                        <button onClick={() => abrirModal('eliminar')} className="admin-bar-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-icon"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            Eliminar Jugador
-                        </button>
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 pb-28 lg:pb-12">
+            <div className="flex flex-col lg:flex-row gap-8">
+                {/* Mobile Filters Dropdown */}
+                <div className="lg:hidden w-full bg-slate-950/40 border border-slate-900 rounded-2xl p-4 mb-2 backdrop-blur-md">
+                    <div className="flex items-center gap-2 text-xs font-bold text-orange-500 uppercase tracking-wider mb-3">
+                        <Users className="w-4 h-4" />
+                        <span>Filtrar por Equipo</span>
+                    </div>
+                    <div className="relative">
+                        <select 
+                            className="w-full bg-slate-900 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all appearance-none pr-10 cursor-pointer"
+                            value={filtroSeleccionado}
+                            onChange={(e) => setFiltroSeleccionado(e.target.value)}
+                        >
+                            <option value="todos">Todos los Jugadores</option>
+                            <option value="agentes-libres">Agentes Libres</option>
+                            {equipos.map(eq => (
+                                <option key={eq.id} value={eq.id}>{eq.nombre}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
                     </div>
                 </div>
-            )}
 
-            <div className="jugadores-main-container">
                 {/* Sidebar Izquierdo: Filtros */}
-                <aside className="jugadores-sidebar">
-                    <h2 className="sidebar-titulo">Filtros</h2>
-                    
-                    <h3 className="sidebar-seccion-titulo">Equipos</h3>
-                    <ul className="sidebar-filter-list">
-                        <li 
-                            className={`sidebar-filter-item ${filtroSeleccionado === 'todos' ? 'active' : ''}`}
-                            onClick={() => setFiltroSeleccionado('todos')}
-                        >
-                            {filtroSeleccionado === 'todos' && <span className="checkmark">✓</span>} Todos
+                <aside className="hidden lg:block w-64 shrink-0 bg-slate-950/40 border border-slate-900 rounded-3xl p-6 h-fit backdrop-blur-md">
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-orange-500" />
+                        Equipos
+                    </h2>
+                    <ul className="space-y-1.5">
+                        <li>
+                            <button 
+                                className={`w-full px-4 py-2.5 text-left text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                                    filtroSeleccionado === 'todos' 
+                                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/10' 
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+                                }`}
+                                onClick={() => setFiltroSeleccionado('todos')}
+                            >
+                                Todos
+                            </button>
                         </li>
-                        <li 
-                            className={`sidebar-filter-item ${filtroSeleccionado === 'agentes-libres' ? 'active' : ''}`}
-                            onClick={() => setFiltroSeleccionado('agentes-libres')}
-                        >
-                            {filtroSeleccionado === 'agentes-libres' && <span className="checkmark">✓</span>} Agentes Libres
+                        <li>
+                            <button 
+                                className={`w-full px-4 py-2.5 text-left text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                                    filtroSeleccionado === 'agentes-libres' 
+                                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/10' 
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+                                }`}
+                                onClick={() => setFiltroSeleccionado('agentes-libres')}
+                            >
+                                Agentes Libres
+                            </button>
                         </li>
                         {equipos.map(eq => (
-                            <li 
-                                key={eq.id}
-                                className={`sidebar-filter-item ${filtroSeleccionado == eq.id ? 'active' : ''}`}
-                                onClick={() => setFiltroSeleccionado(eq.id)}
-                            >
-                                {filtroSeleccionado == eq.id && <span className="checkmark">✓</span>} {eq.nombre}
+                            <li key={eq.id}>
+                                <button 
+                                    className={`w-full px-4 py-2.5 text-left text-xs font-bold rounded-xl transition-all cursor-pointer truncate ${
+                                        filtroSeleccionado == eq.id 
+                                            ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/10' 
+                                            : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+                                    }`}
+                                    onClick={() => setFiltroSeleccionado(eq.id)}
+                                >
+                                    {eq.nombre}
+                                </button>
                             </li>
                         ))}
                     </ul>
                 </aside>
 
-                {/* Contenido Principal: Grilla de Jugadores */}
-
-                <main className="jugadores-content">
-                    <h1 className="content-titulo">Estadísticas de Jugadores</h1>
-                    <p className="content-subtitulo">Puntos Totales por Temporada y Trayectoria</p>
-
-                    <div className="jugadores-buscador">
-                        <input 
-                            type="text" 
-                            placeholder="Buscar Jugador" 
-                            value={busqueda} 
-                            onChange= {e => setBusqueda(e.target.value)}
-                            className="buscador-input"
-                        />
+                {/* Contenido Principal */}
+                <main className="flex-grow">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-900 pb-5">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Estadísticas de Jugadores</h1>
+                            <p className="text-slate-400 text-xs mt-0.5">Puntos totales por temporada y trayectoria</p>
+                        </div>
+                        
+                        <div className="relative w-full md:w-72">
+                            <input 
+                                type="text" 
+                                placeholder="Buscar Jugador" 
+                                value={busqueda} 
+                                onChange={e => setBusqueda(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-xs font-medium placeholder-slate-500"
+                            />
+                            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        </div>
                     </div>
 
                     {cargando ? (
-                        <div className="jugadores-cargando">
-                            <div className="spinner"></div>
-                            <p>Cargando lista de jugadores...</p>
+                        <div className="py-12 text-center text-slate-500 text-sm font-semibold">
+                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                            Cargando lista de jugadores...
                         </div>
                     ) : jugadoresFiltrados.length > 0 ? (
-                        <div className="jugadores-cards-grid">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                             {jugadoresFiltrados.map(jugador => (
-                                <div key={jugador.id} className="jugador-card-premium">
-                                    <div className="jugador-card-header">
-                                        <div className="jugador-identidad">
-                                            <h3 className="jugador-nombre">{jugador.nombre_apellido}</h3>
-                                            <p className="jugador-team-dorsal">
-                                                {jugador.nombre_equipo || 'Agente Libre'} | #{jugador.dorsal ?? '—'}
-                                            </p>
-                                        </div>
-                                        <div className="jugador-card-logo-wrapper">
-                                            {jugador.logo_equipo ? (
-                                                <img 
-                                                    src={`http://localhost:5000${jugador.logo_equipo}`} 
-                                                    alt={jugador.nombre_equipo} 
-                                                    className="jugador-card-team-logo"
-                                                />
-                                            ) : (
-                                                <div className="jugador-card-team-logo placeholder"></div>
-                                            )}
-                                        </div>
-                                    </div>
+                                <div key={jugador.id} className="bg-slate-900/40 hover:bg-slate-900 border border-slate-900 hover:border-slate-800/80 rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/5 group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-colors pointer-events-none" />
 
-                                    <div className="jugador-card-body">
-                                        <div className="stats-section">
-                                            <h4 className="stats-section-title">Puntos por Temporada</h4>
-                                            <ul className="stats-list">
-                                                {jugador.puntos_temporadas && jugador.puntos_temporadas.length > 0 ? (
-                                                    jugador.puntos_temporadas.map(pt => (
-                                                        <li key={pt.temporada_id} className="stats-item">
-                                                            <span className="bullet">•</span>
-                                                            <span className="temp-name">{pt.nombre_temporada}</span>
-                                                            <span className="temp-value">{pt.puntos} pts</span>
-                                                        </li>
-                                                    ))
+                                    <div>
+                                        <div className="flex items-start justify-between gap-4 mb-5 border-b border-slate-900/55 pb-4">
+                                            <div className="truncate">
+                                                <h3 className="text-base font-extrabold text-white group-hover:text-orange-500 transition-colors truncate">{jugador.nombre_apellido}</h3>
+                                                <p className="text-[10px] font-bold text-slate-500 tracking-wide mt-1 uppercase">
+                                                    {jugador.nombre_equipo || 'Agente Libre'} {jugador.dorsal !== null && `• #${jugador.dorsal}`}
+                                                </p>
+                                            </div>
+                                            <div className="w-11 h-11 rounded-full bg-slate-950 border border-slate-900 flex items-center justify-center p-0.5 overflow-hidden shrink-0 shadow-inner">
+                                                {jugador.logo_equipo ? (
+                                                    <img 
+                                                        src={`http://localhost:5000${jugador.logo_equipo}`} 
+                                                        alt={jugador.nombre_equipo} 
+                                                        className="w-full h-full rounded-full object-cover"
+                                                    />
                                                 ) : (
-                                                    <li className="stats-item vacio">Sin puntos registrados</li>
+                                                    <div className="text-base">🏀</div>
                                                 )}
-                                            </ul>
+                                            </div>
                                         </div>
 
-                                        <div className="stats-section trayectoria">
-                                            <h4 className="stats-section-title">Trayectoria</h4>
-                                            <ul className="stats-list">
-                                                {jugador.trayectoria && jugador.trayectoria.length > 0 ? (
-                                                    jugador.trayectoria.slice(0, 3).map((tr, idx) => (
-                                                        <li key={idx} className="stats-item">
-                                                            <span className="bullet">•</span>
-                                                            <span className="temp-name">{tr.equipo}</span>
-                                                            <span className="temp-value small">{tr.temporada}</span>
-                                                        </li>
-                                                    ))
-                                                ) : (
-                                                    <li className="stats-item vacio">Sin historial registrado</li>
-                                                )}
-                                            </ul>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <Activity className="w-3.5 h-3.5 text-orange-500" />
+                                                    Puntos por Temporada
+                                                </h4>
+                                                <ul className="space-y-1 bg-slate-950/30 p-3 rounded-xl border border-slate-900/50">
+                                                    {jugador.puntos_temporadas && jugador.puntos_temporadas.length > 0 ? (
+                                                        jugador.puntos_temporadas.map(pt => (
+                                                            <li key={pt.temporada_id} className="flex justify-between items-center text-xs font-semibold">
+                                                                <span className="text-slate-400 truncate pr-2">{pt.nombre_temporada}</span>
+                                                                <span className="text-orange-500 font-extrabold shrink-0 bg-orange-500/5 px-1.5 py-0.5 rounded border border-orange-500/10">{pt.puntos} pts</span>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li className="text-[10px] text-slate-600 text-center font-bold py-1">Sin puntos registrados</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <Award className="w-3.5 h-3.5 text-orange-500" />
+                                                    Trayectoria
+                                                </h4>
+                                                <ul className="space-y-1 bg-slate-950/30 p-3 rounded-xl border border-slate-900/50">
+                                                    {jugador.trayectoria && jugador.trayectoria.length > 0 ? (
+                                                        jugador.trayectoria.slice(0, 3).map((tr, idx) => (
+                                                            <li key={idx} className="flex justify-between items-center text-xs font-semibold">
+                                                                <span className="text-slate-300 truncate pr-2">{tr.equipo}</span>
+                                                                <span className="text-slate-500 text-[10px] shrink-0">{tr.temporada}</span>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li className="text-[10px] text-slate-600 text-center font-bold py-1">Sin historial registrado</li>
+                                                    )}
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="jugadores-grid-vacia">
-                            <p>Debes elegir un filtro para ver los jugadores por equipo.</p>
+                        <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-12 text-center text-slate-500 text-sm font-medium backdrop-blur-md">
+                            <HelpCircle className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                            No se encontraron jugadores que coincidan con la búsqueda.
                         </div>
                     )}
                 </main>
             </div>
-
-            {/* Modales de Administración */}
-            {modalActivo && (
-                <div className="admin-modal-overlay" onClick={() => setModalActivo(null)}>
-                    <div className="admin-modal" onClick={e => e.stopPropagation()}>
-                        
-                        {/* MODAL CREAR */}
-                        {modalActivo === 'crear' && (
-                            <form onSubmit={registrarJugador}>
-                                <h2>Registrar Nuevo Jugador</h2>
-                                <label>Nombre y Apellido *</label>
-                                <input 
-                                    type="text" 
-                                    name="nombre_apellido" 
-                                    value={formData.nombre_apellido} 
-                                    onChange={handleInputChange} 
-                                    className="admin-input" 
-                                    required 
-                                />
-
-                                <label>Dorsal (Número de Camiseta)</label>
-                                <input 
-                                    type="number" 
-                                    name="dorsal" 
-                                    value={formData.dorsal} 
-                                    onChange={handleInputChange} 
-                                    className="admin-input" 
-                                    min="0" 
-                                    max="99" 
-                                />
-
-                                <div className="admin-modal-actions">
-                                    <button type="button" onClick={() => setModalActivo(null)} className="admin-btn cancel">Cancelar</button>
-                                    <button type="submit" className="admin-btn submit">Registrar</button>
-                                </div>
-                            </form>
-                        )}
-
-                        {/* MODAL ACTUALIZAR */}
-                        {modalActivo === 'actualizar' && (
-                            <form onSubmit={actualizarJugador}>
-                                <h2>Editar Datos de Jugador</h2>
-                                <label>Selecciona Jugador *</label>
-                                <select 
-                                    value={formData.id} 
-                                    onChange={handleJugadorSelectChange}
-                                    className="admin-input" 
-                                    required
-                                >
-                                    <option value="">-- Selecciona un Jugador --</option>
-                                    {jugadores.map(j => (
-                                        <option key={j.id} value={j.id}>{j.nombre_apellido} ({j.nombre_equipo || 'Agente Libre'})</option>
-                                    ))}
-                                </select>
-
-                                {formData.id && (
-                                    <>
-                                        <label>Nombre y Apellido *</label>
-                                        <input 
-                                            type="text" 
-                                            name="nombre_apellido" 
-                                            value={formData.nombre_apellido} 
-                                            onChange={handleInputChange} 
-                                            className="admin-input" 
-                                            required 
-                                        />
-
-                                        <label>Dorsal (Número de Camiseta)</label>
-                                        <input 
-                                            type="number" 
-                                            name="dorsal" 
-                                            value={formData.dorsal} 
-                                            onChange={handleInputChange} 
-                                            className="admin-input" 
-                                            min="0" 
-                                            max="99" 
-                                        />
-                                    </>
-                                )}
-
-                                <div className="admin-modal-actions">
-                                    <button type="button" onClick={() => setModalActivo(null)} className="admin-btn cancel">Cancelar</button>
-                                    <button type="submit" disabled={!formData.id} className="admin-btn submit">Guardar Cambios</button>
-                                </div>
-                            </form>
-                        )}
-
-                        {/* MODAL FICHAJE (ASIGNAR EQUIPO) */}
-                        {modalActivo === 'fichar' && (
-                            <form onSubmit={gestionarFichaje}>
-                                <h2>Asignar / Cambiar Equipo</h2>
-                                <label>Selecciona Jugador *</label>
-                                <select 
-                                    value={formData.id} 
-                                    onChange={handleJugadorSelectChange} 
-                                    className="admin-input" 
-                                    required
-                                >
-                                    <option value="">-- Selecciona un Jugador --</option>
-                                    {jugadores.map(j => (
-                                        <option key={j.id} value={j.id}>{j.nombre_apellido} ({j.nombre_equipo || 'Agente Libre'})</option>
-                                    ))}
-                                </select>
-
-                                <label>Nuevo Equipo (Selecciona vacío para Agente Libre)</label>
-                                <select 
-                                    name="equipo_id" 
-                                    value={formData.equipo_id} 
-                                    onChange={handleInputChange} 
-                                    className="admin-input"
-                                >
-                                    <option value="">-- Agente Libre --</option>
-                                    {equipos.map(eq => (
-                                        <option key={eq.id} value={eq.id}>{eq.nombre}</option>
-                                    ))}
-                                </select>
-
-                                <label>Temporada de Fichaje / Movimiento *</label>
-                                <select 
-                                    name="temporada_id" 
-                                    value={formData.temporada_id} 
-                                    onChange={handleInputChange} 
-                                    className="admin-input" 
-                                    required
-                                >
-                                    <option value="">-- Selecciona Temporada --</option>
-                                    {temporadas.map(t => (
-                                        <option key={t.id} value={t.id}>{t.nombre}</option>
-                                    ))}
-                                </select>
-
-                                <div className="admin-modal-actions">
-                                    <button type="button" onClick={() => setModalActivo(null)} className="admin-btn cancel">Cancelar</button>
-                                    <button type="submit" disabled={!formData.id || !formData.temporada_id} className="admin-btn submit">Ejecutar Fichaje</button>
-                                </div>
-                            </form>
-                        )}
-
-                        {/* MODAL ELIMINAR */}
-                        {modalActivo === 'eliminar' && (
-                            <form onSubmit={eliminarJugador}>
-                                <h2>Eliminar Jugador</h2>
-                                <p style={{ color: '#ef4444', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                                    ⚠️ ADVERTENCIA: Esta acción eliminará permanentemente al jugador de la base de datos y borrará sus estadísticas vinculadas.
-                                </p>
-
-                                <label>Selecciona Jugador a Eliminar *</label>
-                                <select 
-                                    value={formData.id} 
-                                    onChange={handleJugadorSelectChange} 
-                                    className="admin-input" 
-                                    required
-                                >
-                                    <option value="">-- Selecciona un Jugador --</option>
-                                    {jugadores.map(j => (
-                                        <option key={j.id} value={j.id}>{j.nombre_apellido} ({j.nombre_equipo || 'Agente Libre'})</option>
-                                    ))}
-                                </select>
-
-                                <div className="admin-modal-actions">
-                                    <button type="button" onClick={() => setModalActivo(null)} className="admin-btn cancel">Cancelar</button>
-                                    <button type="submit" disabled={!formData.id} className="admin-btn submit delete-btn">Confirmar Eliminación</button>
-                                </div>
-                            </form>
-                        )}
-
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

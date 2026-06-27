@@ -93,7 +93,56 @@ const obtenerPartidosPorJornada = async (req, res) => {
 const crearPartido = async (req, res) => {
     const { id_equipo_local, id_equipo_visitante, fecha, horario, temporada_id, jornada, lugar } = req.body;
 
+    if (id_equipo_local == id_equipo_visitante) {
+        return res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo." });
+    }
+
     try {
+        // Verificar que el equipo local tenga jugadores
+        const jugadoresLocal = await pool.query(
+            'SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1',
+            [id_equipo_local]
+        );
+        if (jugadoresLocal.rows[0].count === 0) {
+            const localTeamRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [id_equipo_local]);
+            const localName = localTeamRes.rows[0]?.nombre || 'Local';
+            return res.status(400).json({ error: `El equipo local (${localName}) no tiene jugadores registrados. No puede participar en partidos.` });
+        }
+
+        // Verificar que el equipo visitante tenga jugadores
+        const jugadoresVisitante = await pool.query(
+            'SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1',
+            [id_equipo_visitante]
+        );
+        if (jugadoresVisitante.rows[0].count === 0) {
+            const visitanteTeamRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [id_equipo_visitante]);
+            const visitanteName = visitanteTeamRes.rows[0]?.nombre || 'Visitante';
+            return res.status(400).json({ error: `El equipo visitante (${visitanteName}) no tiene jugadores registrados. No puede participar en partidos.` });
+        }
+
+        // Verificar si el equipo local o visitante ya tiene un partido ese día
+        const conflictoLocal = await pool.query(
+            `SELECT p.id, e.nombre 
+             FROM partidos p 
+             JOIN equipos e ON (e.id = $2)
+             WHERE p.fecha = $1 AND (p.id_equipo_local = $2 OR p.id_equipo_visitante = $2) LIMIT 1`,
+            [fecha, id_equipo_local]
+        );
+        if (conflictoLocal.rows.length > 0) {
+            return res.status(400).json({ error: `El equipo local (${conflictoLocal.rows[0].nombre}) ya tiene un partido programado o jugado en la fecha ${fecha}.` });
+        }
+
+        const conflictoVisitante = await pool.query(
+            `SELECT p.id, e.nombre 
+             FROM partidos p 
+             JOIN equipos e ON (e.id = $2)
+             WHERE p.fecha = $1 AND (p.id_equipo_local = $2 OR p.id_equipo_visitante = $2) LIMIT 1`,
+            [fecha, id_equipo_visitante]
+        );
+        if (conflictoVisitante.rows.length > 0) {
+            return res.status(400).json({ error: `El equipo visitante (${conflictoVisitante.rows[0].nombre}) ya tiene un partido programado o jugado en la fecha ${fecha}.` });
+        }
+
         let temporadaParaRegistrar;
 
         // Selección de temporada: manual (por ID) o automática (la actual)
@@ -193,7 +242,18 @@ const finalizarPartido = async (req, res) => {
         const pVisitante = parseInt(puntos_visitante, 10);
 
         if (isNaN(pLocal) || isNaN(pVisitante)) {
+            await client.query('ROLLBACK');
             return res.status(400).json({ error: "Los puntos deben ser valores numéricos válidos" });
+        }
+
+        if (pLocal === pVisitante) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: "No se permiten empates en el baloncesto. Debe haber un ganador." });
+        }
+
+        if (pLocal <= 0 || pVisitante <= 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: "Los resultados deben ser coherentes: los puntos de ambos equipos deben ser mayores a cero." });
         }
 
         // Registrar marcador y marcar como finalizado
@@ -298,11 +358,74 @@ const finalizarPartido = async (req, res) => {
 const actualizarPartido = async (req, res) => {
     const { id } = req.params;
     const { id_equipo_local, id_equipo_visitante, puntos_local, puntos_visitante, fecha, horario, lugar, temporada_id, jornada } = req.body;
+
+    if (id_equipo_local == id_equipo_visitante) {
+        return res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo." });
+    }
+
     try {
+        // Verificar que el equipo local tenga jugadores
+        const jugadoresLocal = await pool.query(
+            'SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1',
+            [id_equipo_local]
+        );
+        if (jugadoresLocal.rows[0].count === 0) {
+            const localTeamRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [id_equipo_local]);
+            const localName = localTeamRes.rows[0]?.nombre || 'Local';
+            return res.status(400).json({ error: `El equipo local (${localName}) no tiene jugadores registrados. No puede participar en partidos.` });
+        }
+
+        // Verificar que el equipo visitante tenga jugadores
+        const jugadoresVisitante = await pool.query(
+            'SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1',
+            [id_equipo_visitante]
+        );
+        if (jugadoresVisitante.rows[0].count === 0) {
+            const visitanteTeamRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [id_equipo_visitante]);
+            const visitanteName = visitanteTeamRes.rows[0]?.nombre || 'Visitante';
+            return res.status(400).json({ error: `El equipo visitante (${visitanteName}) no tiene jugadores registrados. No puede participar en partidos.` });
+        }
+
         // Convertir strings vacíos a null para campos de tipo integer en la DB
         const pLocal = (puntos_local === '' || puntos_local === undefined) ? null : puntos_local;
         const pVisitante = (puntos_visitante === '' || puntos_visitante === undefined) ? null : puntos_visitante;
         const jornadaVal = (jornada === '' || jornada === undefined) ? null : jornada;
+
+        // Verificar conflicto de fecha excluyendo este partido
+        const conflictoLocal = await pool.query(
+            `SELECT p.id, e.nombre 
+             FROM partidos p 
+             JOIN equipos e ON (e.id = $2)
+             WHERE p.fecha = $1 AND (p.id_equipo_local = $2 OR p.id_equipo_visitante = $2) AND p.id != $3 LIMIT 1`,
+            [fecha, id_equipo_local, id]
+        );
+        if (conflictoLocal.rows.length > 0) {
+            return res.status(400).json({ error: `El equipo local (${conflictoLocal.rows[0].nombre}) ya tiene un partido programado o jugado en la fecha ${fecha}.` });
+        }
+
+        const conflictoVisitante = await pool.query(
+            `SELECT p.id, e.nombre 
+             FROM partidos p 
+             JOIN equipos e ON (e.id = $2)
+             WHERE p.fecha = $1 AND (p.id_equipo_local = $2 OR p.id_equipo_visitante = $2) AND p.id != $3 LIMIT 1`,
+            [fecha, id_equipo_visitante, id]
+        );
+        if (conflictoVisitante.rows.length > 0) {
+            return res.status(400).json({ error: `El equipo visitante (${conflictoVisitante.rows[0].nombre}) ya tiene un partido programado o jugado en la fecha ${fecha}.` });
+        }
+
+        // Verificar resultados coherentes y empates si se proveen puntos
+        const pLocalInt = (pLocal === null) ? null : parseInt(pLocal, 10);
+        const pVisitanteInt = (pVisitante === null) ? null : parseInt(pVisitante, 10);
+
+        if (pLocalInt !== null && pVisitanteInt !== null && !isNaN(pLocalInt) && !isNaN(pVisitanteInt)) {
+            if (pLocalInt === pVisitanteInt) {
+                return res.status(400).json({ error: "No se permiten empates en el baloncesto. Debe haber un ganador." });
+            }
+            if (pLocalInt <= 0 || pVisitanteInt <= 0) {
+                return res.status(400).json({ error: "Los resultados deben ser coherentes: los puntos de ambos equipos deben ser mayores a cero." });
+            }
+        }
 
         const resultado = await pool.query(
             `UPDATE partidos SET id_equipo_local = $1, id_equipo_visitante = $2, puntos_local = $3, 

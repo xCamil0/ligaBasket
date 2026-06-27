@@ -36,20 +36,43 @@ const crearEquipo = async (req, res) => {
             return res.status(400).json({ error: "La temporada especificada no existe" });
         }
 
-        const existe = await pool.query('SELECT id, activo FROM equipos WHERE nombre ILIKE $1', [nombre]);
+        // Verificar que el entrenador no esté asignado a otro equipo activo
+        const existeEntrenador = await pool.query(
+            'SELECT id, nombre FROM equipos WHERE LOWER(entrenador) = LOWER($1) AND activo = true',
+            [entrenador.trim()]
+        );
+        if (existeEntrenador.rows.length > 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: `El entrenador "${entrenador}" ya está asignado al equipo "${existeEntrenador.rows[0].nombre}".` });
+        }
+
+        // Verificar que el estadio no esté asignado a otro equipo activo
+        const existeEstadio = await pool.query(
+            'SELECT id, nombre FROM equipos WHERE LOWER(estadio) = LOWER($1) AND activo = true',
+            [estadio.trim()]
+        );
+        if (existeEstadio.rows.length > 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: `El estadio "${estadio}" ya está asignado al equipo "${existeEstadio.rows[0].nombre}".` });
+        }
+
+        const existe = await pool.query('SELECT id, activo FROM equipos WHERE nombre ILIKE $1', [nombre.trim()]);
         let equipoId;
 
         if (existe.rows.length > 0) {
             equipoId = existe.rows[0].id;
             const equipoActivo = existe.rows[0].activo;
 
-            // Si el equipo estaba inactivo, lo reactivamos con los nuevos datos
-            if (!equipoActivo) {
-                await pool.query(
-                    'UPDATE equipos SET activo = true, entrenador = $1, estadio = $2, logo = COALESCE($3, logo) WHERE id = $4',
-                    [entrenador, estadio, logoPath, equipoId]
-                );
+            if (equipoActivo) {
+                if (req.file) fs.unlinkSync(req.file.path);
+                return res.status(400).json({ error: `Ya existe un equipo activo con el nombre "${nombre}". Los nombres de equipo deben ser únicos.` });
             }
+
+            // Si el equipo estaba inactivo, lo reactivamos con los nuevos datos
+            await pool.query(
+                'UPDATE equipos SET activo = true, entrenador = $1, estadio = $2, logo = COALESCE($3, logo) WHERE id = $4',
+                [entrenador, estadio, logoPath, equipoId]
+            );
 
             // Verificar si ya está inscrito en esta temporada
             const relacion = await pool.query(
@@ -109,6 +132,36 @@ const actualizarEquipo = async (req, res) => {
             return res.status(404).json({ error: "Equipo no encontrado" });
         }
 
+        // Verificar si ya existe otro equipo activo con ese nombre (case-insensitive)
+        const existeOtro = await pool.query(
+            'SELECT id FROM equipos WHERE LOWER(nombre) = LOWER($1) AND id != $2 AND activo = true',
+            [nombre.trim(), id]
+        );
+        if (existeOtro.rows.length > 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: `Ya existe otro equipo activo con el nombre "${nombre}". Los nombres de equipo deben ser únicos.` });
+        }
+
+        // Verificar si el entrenador ya está asignado a otro equipo activo (case-insensitive)
+        const existeEntrenador = await pool.query(
+            'SELECT id, nombre FROM equipos WHERE LOWER(entrenador) = LOWER($1) AND id != $2 AND activo = true',
+            [entrenador.trim(), id]
+        );
+        if (existeEntrenador.rows.length > 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: `El entrenador "${entrenador}" ya está asignado al equipo "${existeEntrenador.rows[0].nombre}".` });
+        }
+
+        // Verificar si el estadio ya está asignado a otro equipo activo (case-insensitive)
+        const existeEstadio = await pool.query(
+            'SELECT id, nombre FROM equipos WHERE LOWER(estadio) = LOWER($1) AND id != $2 AND activo = true',
+            [estadio.trim(), id]
+        );
+        if (existeEstadio.rows.length > 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: `El estadio "${estadio}" ya está asignado al equipo "${existeEstadio.rows[0].nombre}".` });
+        }
+
         let logof = equipoActual.rows[0].logo;
         if (req.file) {
             // Borrar el logo anterior si existe
@@ -140,41 +193,65 @@ const actualizarEquipo = async (req, res) => {
     }
 };
 
-/** Desactiva un equipo (soft delete) y libera sus jugadores. */
+/** Desactiva un equipo (soft delete), elimina partidos programados y libera sus jugadores en una sola transacción. */
 const eliminarEquipo = async (req, res) => {
     const { id } = req.params;
+    const client = await pool.connect();
 
     try {
-        const equipo = await pool.query('SELECT logo, nombre FROM equipos WHERE id = $1', [id]);
-        if (equipo.rows.length === 0) return res.status(404).json({ error: "Equipo no encontrado" });
+        await client.query('BEGIN');
+
+        const equipo = await client.query('SELECT logo, nombre FROM equipos WHERE id = $1', [id]);
+        if (equipo.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Equipo no encontrado" });
+        }
 
         const logoParaBorrar = equipo.rows[0].logo;
         if (logoParaBorrar) {
             const rutaArchivo = path.join(__dirname, '../../', logoParaBorrar);
-            if (fs.existsSync(rutaArchivo)) fs.unlinkSync(rutaArchivo);
+            if (fs.existsSync(rutaArchivo)) {
+                try {
+                    fs.unlinkSync(rutaArchivo);
+                } catch (err) {
+                    console.error("Error al borrar archivo de logo:", err);
+                }
+            }
         }
 
-        const resultado = await pool.query(
+        // Paso 1: Actualizar el estado del equipo a inactivo (activo = false, logo = NULL)
+        const resultado = await client.query(
             'UPDATE equipos SET activo = false, logo = NULL WHERE id = $1 RETURNING nombre',
             [id]
         );
 
-        const tempRes = await pool.query('SELECT id FROM temporadas WHERE actual = true LIMIT 1');
+        const tempRes = await client.query('SELECT id FROM temporadas WHERE actual = true LIMIT 1');
         const temporada_actual_id = tempRes.rows[0]?.id;
 
         if (temporada_actual_id) {
-            await pool.query(
+            await client.query(
                 'DELETE FROM temporada_equipos WHERE equipo_id = $1 AND temporada_id = $2',
                 [id, temporada_actual_id]
             );
         }
 
-        await pool.query('UPDATE jugadores SET equipo_id = NULL WHERE equipo_id = $1', [id]);
+        // Pasos 2 & 3: Eliminar partidos programados (finalizado = false)
+        await client.query(
+            'DELETE FROM partidos WHERE (id_equipo_local = $1 OR id_equipo_visitante = $1) AND finalizado = false',
+            [id]
+        );
 
-        res.json({ mensaje: `El equipo ${resultado.rows[0].nombre} ha sido desactivado.` });
+        // Paso 4: Liberar a los jugadores (equipo_id = NULL)
+        await client.query('UPDATE jugadores SET equipo_id = NULL WHERE equipo_id = $1', [id]);
+
+        await client.query('COMMIT');
+        res.json({ mensaje: `El equipo ${resultado.rows[0].nombre} ha sido desactivado. Se han eliminado sus partidos programados y sus jugadores han quedado libres.` });
     } catch (error) {
-        console.error(error);
+        await client.query('ROLLBACK');
+        console.error("Error al desactivar el equipo:", error);
         res.status(500).json({ error: "Error al procesar la baja del equipo" });
+    } finally {
+        client.release();
     }
 };
 
@@ -249,6 +326,30 @@ const gestionarFichajeOLiberacion = async (req, res) => {
     const { jugador_id, equipo_id, temporada_id } = req.body;
 
     try {
+        // Obtener el equipo actual del jugador
+        const jugadorRes = await pool.query('SELECT equipo_id FROM jugadores WHERE id = $1', [jugador_id]);
+        const equipoActualId = jugadorRes.rows[0]?.equipo_id;
+
+        // Si el jugador pertenece a un equipo y se está moviendo a otro (o liberando)
+        if (equipoActualId && Number(equipoActualId) !== Number(equipo_id)) {
+            // Verificar si es el último jugador
+            const conteoRes = await pool.query('SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1', [equipoActualId]);
+            if (conteoRes.rows[0].count === 1) {
+                // Verificar si el equipo tiene partidos programados (finalizado = false)
+                const partidosRes = await pool.query(
+                    'SELECT COUNT(*)::int AS count FROM partidos WHERE (id_equipo_local = $1 OR id_equipo_visitante = $1) AND finalizado = false',
+                    [equipoActualId]
+                );
+                if (partidosRes.rows[0].count > 0) {
+                    const equipoNombreRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [equipoActualId]);
+                    const equipoNombre = equipoNombreRes.rows[0]?.nombre || 'su equipo';
+                    return res.status(400).json({
+                        error: `No se puede transferir o liberar al jugador porque es el único jugador del equipo "${equipoNombre}" y el equipo tiene partidos programados. Registre otros jugadores o cancele los partidos primero.`
+                    });
+                }
+            }
+        }
+
         await pool.query('BEGIN');
 
         // Desactivar fichaje anterior

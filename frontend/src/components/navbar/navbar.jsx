@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
+import { Home, Users, Trophy, Calendar, Award, Shield, LogIn, LogOut, Menu, X, User } from 'lucide-react';
 import LoginModal from '../pages/login/login';
-import './navbar.css';
 
 const Navbar = () => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [username, setUsername] = useState('');
 
     // Verificar si hay sesión activa al montar
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (token) setIsLoggedIn(true);
+        const user = localStorage.getItem('username');
+        if (token) {
+            setIsLoggedIn(true);
+            setUsername(user || 'Admin');
+        }
     }, []);
 
     const handleLoginSuccess = () => {
@@ -33,99 +38,207 @@ const Navbar = () => {
 
     const pathname = window.location.pathname;
 
+    const navLinks = [
+        { name: 'Inicio', href: '/', icon: Home, active: pathname === '/' },
+        { name: 'Equipos', href: '/equipos', icon: Shield, active: pathname.startsWith('/equipos') },
+        { name: 'Pichichi', href: '/pichichi', icon: Trophy, active: pathname.startsWith('/pichichi') },
+        { name: 'Partidos', href: '/partidos', icon: Calendar, active: pathname.startsWith('/partido') || pathname.startsWith('/partidos') },
+        { name: 'Jugadores', href: '/jugadores', icon: Users, active: pathname.startsWith('/jugadores') },
+    ];
+
     return (
         <>
             {/* Top Navbar */}
-            <nav className="navbar">
-                <div className="navbar-logo">
-                    <a href="/"><img src="http://localhost:5000/uploads/logo_basket.png" alt="Logo" className='logo' /></a>
+            <nav className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-900 px-6 py-4 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-3">
+                    <a href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <div className="w-10 h-10 rounded-full bg-linear-to-tr from-orange-500 to-orange-600 flex items-center justify-center p-0.5 shadow-md shadow-orange-500/10">
+                            <img src="http://localhost:5000/uploads/logo_basket.png" alt="Logo" className="w-full h-full rounded-full object-cover" />
+                        </div>
+                        <span className="text-white font-extrabold text-lg tracking-wider hidden sm:block">NEXT<span className="text-orange-500">GEN</span></span>
+                    </a>
                 </div>
 
-                <div className="navbar-links-main">
-                    <a href="/" className={pathname === '/' ? 'nav-btn-active' : 'nav-link'}>Inicio</a>
-                    <a href="/equipos" className={pathname.startsWith('/equipos') ? 'nav-btn-active' : 'nav-link'}>Equipos</a>
-                    <a href="/pichichi" className={pathname.startsWith('/pichichi') ? 'nav-btn-active' : 'nav-link'}>Pichichi</a>
-                    <a href="/partidos" className={pathname.startsWith('/partido') ? 'nav-btn-active' : 'nav-link'}>Partidos</a>
-                    <a href="/jugadores" className={pathname.startsWith('/jugadores') ? 'nav-btn-active' : 'nav-link'}>Jugadores</a>
-                    {isLoggedIn && <a href="/Admin" className={pathname === '/Admin' ? 'nav-btn-active' : 'nav-link'}>Admin</a>}
+                {/* Desktop Menu */}
+                <div className="hidden lg:flex items-center gap-1.5 bg-slate-900/60 p-1.5 rounded-full border border-slate-800/80">
+                    {navLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                            <a
+                                key={link.name}
+                                href={link.href}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                                    link.active
+                                        ? 'bg-linear-to-r from-orange-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                                }`}
+                            >
+                                <Icon className="w-4 h-4" />
+                                {link.name}
+                            </a>
+                        );
+                    })}
+                    {isLoggedIn && (
+                        <a
+                            href="/Admin"
+                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                                pathname === '/Admin'
+                                    ? 'bg-linear-to-r from-orange-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                            }`}
+                        >
+                            <Award className="w-4 h-4" />
+                            Admin
+                        </a>
+                    )}
                 </div>
 
-                <div className="navbar-auth">
+                {/* Desktop Auth */}
+                <div className="hidden lg:flex items-center gap-4">
                     {!isLoggedIn ? (
-                        <button onClick={openLogin} className="login-btn-orange">Login</button>
+                        <button
+                            onClick={openLogin}
+                            className="px-5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+                        >
+                            <LogIn className="w-4 h-4" />
+                            Login
+                        </button>
                     ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <p style={{ color: 'white', fontSize: '0.95rem' }}>Bienvenido, {localStorage.getItem('username')}</p>
-                            <button onClick={handleLogout} className="login-btn-orange">Cerrar Sesión</button>
+                        <div className="flex items-center gap-3 bg-slate-900/80 pl-3 pr-1.5 py-1.5 rounded-full border border-slate-800">
+                            <div className="flex items-center gap-1.5">
+                                <User className="w-4 h-4 text-orange-500" />
+                                <span className="text-slate-200 text-sm font-medium pr-1">{username}</span>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 rounded-full bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all cursor-pointer"
+                                title="Cerrar Sesión"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {/* Hamburger button visible only on Mobile */}
-                <button className="navbar-hamburger" onClick={() => setIsSidebarOpen(true)}>
-                    <svg viewBox="0 0 100 80" width="25" height="25" fill="white">
-                        <rect width="100" height="12" rx="6"></rect>
-                        <rect y="30" width="100" height="12" rx="6"></rect>
-                        <rect y="60" width="100" height="12" rx="6"></rect>
-                    </svg>
+                {/* Hamburger Toggle (Mobile Only) */}
+                <button
+                    className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                    onClick={() => setIsSidebarOpen(true)}
+                >
+                    <Menu className="w-5 h-5" />
                 </button>
             </nav>
 
-            {/* Sidebar drawer overlay & container for Mobile */}
-            <div className={`sidebar-backdrop ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} />
-            <div className={`sidebar-drawer ${isSidebarOpen ? 'active' : ''}`}>
-                <div className="sidebar-header">
-                    <div className="sidebar-logo">
-                        <img src="http://localhost:5000/uploads/logo_basket.png" alt="Logo" className='logo' style={{ width: '45px', height: '45px', borderRadius: '50%' }} />
+            {/* Mobile Drawer Backdrop */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 lg:hidden animate-in fade-in duration-200"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* Mobile Sidebar Drawer */}
+            <div
+                className={`fixed top-0 right-0 h-full w-70 bg-slate-950 border-l border-slate-900 z-50 p-6 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
+                    isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}
+            >
+                <div>
+                    <div className="flex items-center justify-between pb-5 border-b border-slate-900 mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center p-0.5">
+                                <img src="http://localhost:5000/uploads/logo_basket.png" alt="Logo" className="w-full h-full rounded-full object-cover" />
+                            </div>
+                            <span className="text-white font-extrabold text-sm tracking-wider">NEXT<span className="text-orange-500">GEN</span></span>
+                        </div>
+                        <button
+                            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
-                    <button className="sidebar-close" onClick={() => setIsSidebarOpen(false)}>&times;</button>
-                </div>
-                
-                <div className="sidebar-nav-links">
-                    <a href="/" className={pathname === '/' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Inicio</a>
-                    <a href="/equipos" className={pathname.startsWith('/equipos') ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Equipos</a>
-                    <a href="/pichichi" className={pathname.startsWith('/pichichi') ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Pichichi</a>
-                    <a href="/partidos" className={pathname.startsWith('/partido') ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Partidos</a>
-                    <a href="/jugadores" className={pathname.startsWith('/jugadores') ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Jugadores</a>
-                    {isLoggedIn && <a href="/Admin" className={pathname === '/Admin' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setIsSidebarOpen(false)}>Admin</a>}
+
+                    <div className="flex flex-col gap-2">
+                        {navLinks.map((link) => {
+                            const Icon = link.icon;
+                            return (
+                                <a
+                                    key={link.name}
+                                    href={link.href}
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all ${
+                                        link.active
+                                            ? 'bg-orange-500/10 border border-orange-500/20 text-orange-500'
+                                            : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4" />
+                                    {link.name}
+                                </a>
+                            );
+                        })}
+                        {isLoggedIn && (
+                            <a
+                                href="/Admin"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all ${
+                                    pathname === '/Admin'
+                                        ? 'bg-orange-500/10 border border-orange-500/20 text-orange-500'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <Award className="w-4 h-4" />
+                                Panel Admin
+                            </a>
+                        )}
+                    </div>
                 </div>
 
-                <div className="sidebar-auth-section">
+                <div className="border-t border-slate-900 pt-5 mt-auto">
                     {!isLoggedIn ? (
-                        <div className="sidebar-auth-buttons">
-                            <button onClick={openLogin} className="sidebar-btn-orange" style={{ width: '100%' }}>Ingresar</button>
-                        </div>
+                        <button
+                            onClick={openLogin}
+                            className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-orange-600 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-orange-500/10"
+                        >
+                            <LogIn className="w-4 h-4" />
+                            Ingresar
+                        </button>
                     ) : (
-                        <div className="sidebar-user-logged">
-                            <p style={{ color: 'white', fontSize: '0.95rem' }}>Bienvenido, <strong>{localStorage.getItem('username')}</strong></p>
-                            <button onClick={handleLogout} className="sidebar-btn-orange" style={{ marginTop: '12px', width: '100%' }}>Cerrar Sesión</button>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-900 rounded-xl border border-slate-800">
+                                <User className="w-4 h-4 text-orange-500" />
+                                <span className="text-white text-sm font-semibold truncate">Hola, {username}</span>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-red-500/10 border border-slate-800 text-red-400 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Cerrar Sesión
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Bottom Tab Bar for Mobile */}
-            <div className="bottom-tab-bar">
-                <a href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>
-                    <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <span className="tab-label">Inicio</span>
-                </a>
-                <a href="/equipos" className={`tab-item ${pathname.startsWith('/equipos') ? 'active' : ''}`}>
-                    <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    <span className="tab-label">Equipos</span>
-                </a>
-                <a href="/partidos" className={`tab-item ${pathname.startsWith('/partido') ? 'active' : ''}`}>
-                    <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                    <span className="tab-label">Partidos</span>
-                </a>
-                <a href="/jugadores" className={`tab-item ${pathname.startsWith('/jugadores') ? 'active' : ''}`}>
-                    <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <span className="tab-label">Jugadores</span>
-                </a>
-                <a href="/pichichi" className={`tab-item ${pathname.startsWith('/pichichi') ? 'active' : ''}`}>
-                    <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/><path d="M12 2a6 6 0 0 1 6 6c0 3.2-2.1 5.3-6 6.8-3.9-1.5-6-3.6-6-6.8a6 6 0 0 1 6-6z"/></svg>
-                    <span className="tab-label">Pichichi</span>
-                </a>
+            {/* Bottom Tab Bar for Mobile Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 h-16 bg-slate-950/95 border-t border-slate-900 backdrop-blur-md lg:hidden flex items-center justify-around z-40 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
+                {navLinks.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                        <a
+                            key={link.name}
+                            href={link.href}
+                            className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all ${
+                                link.active ? 'text-orange-500 scale-105' : 'text-slate-500'
+                            }`}
+                        >
+                            <Icon className="w-4.5 h-4.5" />
+                            <span className="text-[10px] font-bold tracking-wide">{link.name}</span>
+                        </a>
+                    );
+                })}
             </div>
 
             {isLoginModalOpen && (

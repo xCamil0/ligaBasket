@@ -23,6 +23,26 @@ const obtenerJugadoresPorEquipo = async (req, res) => {
 const crearJugador = async (req, res) => {
     const { nombre_apellido, categoria, equipo_id, dorsal } = req.body;
     try {
+        // Verificar nombre único en la liga (case-insensitive)
+        const existeNombre = await pool.query(
+            'SELECT id FROM jugadores WHERE LOWER(nombre_apellido) = LOWER($1)',
+            [nombre_apellido.trim()]
+        );
+        if (existeNombre.rows.length > 0) {
+            return res.status(400).json({ error: `Ya existe un jugador registrado con el nombre "${nombre_apellido}".` });
+        }
+
+        // Verificar dorsal único en el mismo equipo (si tiene equipo asignado)
+        if (equipo_id && dorsal !== undefined && dorsal !== null && dorsal !== '') {
+            const existeDorsal = await pool.query(
+                'SELECT id, nombre_apellido FROM jugadores WHERE equipo_id = $1 AND dorsal = $2',
+                [equipo_id, dorsal]
+            );
+            if (existeDorsal.rows.length > 0) {
+                return res.status(400).json({ error: `El dorsal ${dorsal} ya está asignado al jugador "${existeDorsal.rows[0].nombre_apellido}" en este equipo.` });
+            }
+        }
+
         const nuevo = await pool.query(
             'INSERT INTO jugadores (nombre_apellido, categoria, equipo_id, dorsal) VALUES ($1, $2, $3, $4) RETURNING *',
             [nombre_apellido, categoria, equipo_id, dorsal]
@@ -39,6 +59,48 @@ const actualizarJugador = async (req, res) => {
     const { id } = req.params;
     const { nombre_apellido, categoria, equipo_id, dorsal } = req.body;
     try {
+        // Obtener el equipo actual del jugador
+        const jugadorRes = await pool.query('SELECT equipo_id FROM jugadores WHERE id = $1', [id]);
+        const equipoActualId = jugadorRes.rows[0]?.equipo_id;
+
+        // Si cambia de equipo y estaba en uno
+        if (equipoActualId && Number(equipoActualId) !== Number(equipo_id)) {
+            const conteoRes = await pool.query('SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1', [equipoActualId]);
+            if (conteoRes.rows[0].count === 1) {
+                const partidosRes = await pool.query(
+                    'SELECT COUNT(*)::int AS count FROM partidos WHERE (id_equipo_local = $1 OR id_equipo_visitante = $1) AND finalizado = false',
+                    [equipoActualId]
+                );
+                if (partidosRes.rows[0].count > 0) {
+                    const equipoNombreRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [equipoActualId]);
+                    const equipoNombre = equipoNombreRes.rows[0]?.nombre || 'su equipo';
+                    return res.status(400).json({
+                        error: `No se puede cambiar el equipo del jugador porque es el único jugador del equipo "${equipoNombre}" y el equipo tiene partidos programados. Registre otros jugadores o cancele los partidos primero.`
+                    });
+                }
+            }
+        }
+
+        // Verificar nombre único en la liga (case-insensitive, excluyendo a este jugador)
+        const existeNombre = await pool.query(
+            'SELECT id FROM jugadores WHERE LOWER(nombre_apellido) = LOWER($1) AND id != $2',
+            [nombre_apellido.trim(), id]
+        );
+        if (existeNombre.rows.length > 0) {
+            return res.status(400).json({ error: `Ya existe un jugador registrado con el nombre "${nombre_apellido}".` });
+        }
+
+        // Verificar dorsal único en el mismo equipo (si tiene equipo asignado, excluyendo a este jugador)
+        if (equipo_id && dorsal !== undefined && dorsal !== null && dorsal !== '') {
+            const existeDorsal = await pool.query(
+                'SELECT id, nombre_apellido FROM jugadores WHERE equipo_id = $1 AND dorsal = $2 AND id != $3',
+                [equipo_id, dorsal, id]
+            );
+            if (existeDorsal.rows.length > 0) {
+                return res.status(400).json({ error: `El dorsal ${dorsal} ya está asignado al jugador "${existeDorsal.rows[0].nombre_apellido}" en este equipo.` });
+            }
+        }
+
         const resultado = await pool.query(
             'UPDATE jugadores SET nombre_apellido = $1, categoria = $2, equipo_id = $3, dorsal = $4 WHERE id = $5 RETURNING *',
             [nombre_apellido, categoria, equipo_id, dorsal, id]
@@ -55,6 +117,27 @@ const actualizarJugador = async (req, res) => {
 const eliminarJugador = async (req, res) => {
     const { id } = req.params;
     try {
+        // Obtener el equipo actual del jugador
+        const jugadorRes = await pool.query('SELECT equipo_id FROM jugadores WHERE id = $1', [id]);
+        const equipoActualId = jugadorRes.rows[0]?.equipo_id;
+
+        if (equipoActualId) {
+            const conteoRes = await pool.query('SELECT COUNT(*)::int AS count FROM jugadores WHERE equipo_id = $1', [equipoActualId]);
+            if (conteoRes.rows[0].count === 1) {
+                const partidosRes = await pool.query(
+                    'SELECT COUNT(*)::int AS count FROM partidos WHERE (id_equipo_local = $1 OR id_equipo_visitante = $1) AND finalizado = false',
+                    [equipoActualId]
+                );
+                if (partidosRes.rows[0].count > 0) {
+                    const equipoNombreRes = await pool.query('SELECT nombre FROM equipos WHERE id = $1', [equipoActualId]);
+                    const equipoNombre = equipoNombreRes.rows[0]?.nombre || 'su equipo';
+                    return res.status(400).json({
+                        error: `No se puede eliminar al jugador porque es el único jugador del equipo "${equipoNombre}" y el equipo tiene partidos programados. Registre otros jugadores o cancele los partidos primero.`
+                    });
+                }
+            }
+        }
+
         const resultado = await pool.query('DELETE FROM jugadores WHERE id = $1 RETURNING *', [id]);
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Jugador no existe" });
         res.json({ mensaje: "Jugador eliminado correctamente" });
