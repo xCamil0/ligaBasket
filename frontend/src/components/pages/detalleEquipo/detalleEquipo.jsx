@@ -240,7 +240,10 @@ const DetalleEquipo = () => {
                                             <Trophy className="w-5 h-5 text-orange-500" />
                                             <h2 className="text-md font-bold text-white uppercase tracking-wider">Partidos Jugados</h2>
                                         </div>
-                                        <Link to="/partidos" className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+                                        <Link
+                                            to={`/partidos?equipo=${encodeURIComponent(equipo.nombre)}`}
+                                            className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors"
+                                        >
                                             Ver mas partidos &gt;
                                         </Link>
                                     </div>
@@ -310,7 +313,10 @@ const DetalleEquipo = () => {
                                             <Clock className="w-5 h-5 text-orange-500" />
                                             <h2 className="text-md font-bold text-white uppercase tracking-wider">Próximos Encuentros</h2>
                                         </div>
-                                        <Link to="/partidos" className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+                                        <Link
+                                            to={`/partidos?equipo=${encodeURIComponent(equipo.nombre)}`}
+                                            className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors"
+                                        >
                                             Ver mas partidos &gt;
                                         </Link>
                                     </div>

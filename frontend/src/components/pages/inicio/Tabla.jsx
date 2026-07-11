@@ -12,11 +12,14 @@ const Standings = () => {
   useEffect(() => {
     const cargarTemporadas = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/temporadas');
-        setTemporadas(res.data);
+        const respuesta = await axios.get('http://localhost:5000/api/temporadas');
+        setTemporadas(respuesta.data);
 
-        if (res.data.length > 0) {
-          setTemporada_id(res.data[res.data.length - 1].id);
+        if (respuesta.data.length > 0) {
+          // Buscar la temporada 2026; si no existe, usar la última disponible
+          const temporada2026 = respuesta.data.find(t => t.nombre?.includes('2026'));
+          const porDefecto = temporada2026 ?? respuesta.data[respuesta.data.length - 1];
+          setTemporada_id(porDefecto.id);
         }
       } catch (error) {
         console.error("Error cargando temporadas:", error);
@@ -36,10 +39,10 @@ const Standings = () => {
     const obtenerDatosTabla = async () => {
       try {
         setCargando(true);
-        const res = await axios.get('http://localhost:5000/api/tabla', {
+        const respuesta = await axios.get('http://localhost:5000/api/tabla', {
           params: { temporada_id: temporada_id }
         });
-        setTabla(res.data);
+        setTabla(respuesta.data);
       } catch (error) {
         console.error("Error al traer la tabla:", error);
         setTabla([]);
@@ -122,14 +125,14 @@ const Standings = () => {
                   </tr>
                 ) : tabla.length > 0 ? (
                   tabla.map((fila, index) => {
-                    const isTopPosition = index < 3;
-                    const posColor = index === 0 ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : index === 1 ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : index === 2 ? 'bg-slate-700/40 text-slate-300 border-slate-600/30' : '';
+                    const esPosicionTop = index < 3;
+                    const colorPosicion = index === 0 ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : index === 1 ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : index === 2 ? 'bg-slate-700/40 text-slate-300 border-slate-600/30' : '';
 
                     return (
                       <tr key={fila.id} className="hover:bg-slate-900/20 transition-colors group">
                         <td className="py-4 px-4 text-center">
-                          {isTopPosition ? (
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black border ${posColor}`}>
+                          {esPosicionTop ? (
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black border ${colorPosicion}`}>
                               {index + 1}
                             </span>
                           ) : (

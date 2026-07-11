@@ -46,6 +46,9 @@ const Admin = () => {
     // Modales y formularios
     const [modalActivo, setModalActivo] = useState(null);
     const [selectedAdminId, setSelectedAdminId] = useState(null);
+    const [resumenTemporada, setResumenTemporada] = useState(null);
+    const [modalFinalizarTemporadaActivo, setModalFinalizarTemporadaActivo] = useState(false);
+    const [cargandoResumen, setCargandoResumen] = useState(false);
 
     // Estados de los Formularios
     const [formTemporada, setFormTemporada] = useState({
@@ -125,6 +128,10 @@ const Admin = () => {
 
     const temporadaActiva = temporadas.find(t => t.actual);
     const temporadaActivaId = temporadaActiva?.id || '';
+    const temporadaSeleccionadaObjeto = temporadas.find(t => t.id == temporadaActivaId);
+    const temporadaFinalizada = temporadaSeleccionadaObjeto?.finalizada === true;
+    const isFormTemporadaFinalizada = formTemporada.id ? (temporadas.find(t => t.id == formTemporada.id)?.finalizada === true) : false;
+    const isSelectedSeasonFinalized = filterMatchSeason ? (temporadas.find(t => t.id == filterMatchSeason)?.finalizada === true) : false;
 
     // Cargar datos iniciales
     const cargarTemporadas = useCallback(async () => {
@@ -303,6 +310,58 @@ const Admin = () => {
         } catch (error) {
             console.error("Error al eliminar temporada:", error);
             showNotification(error.response?.data?.error || "Error al eliminar la temporada", "error");
+        }
+    };
+
+    // Cargar resumen de temporada y abrir modal de confirmación
+    const handleAbrirConfirmarFinalizar = async () => {
+        if (!temporadaActivaId) return;
+        try {
+            setCargandoResumen(true);
+            setModalFinalizarTemporadaActivo(true);
+            const res = await axios.get(`http://localhost:5000/api/temporadas/${temporadaActivaId}/resumen`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setResumenTemporada(res.data);
+        } catch (error) {
+            console.error("Error al obtener resumen de la temporada:", error);
+            showNotification("Error al obtener el resumen de la temporada", "error");
+            setModalFinalizarTemporadaActivo(false);
+        } finally {
+            setCargandoResumen(false);
+        }
+    };
+
+    // Finalizar la temporada actual
+    const handleFinalizarTemporada = async () => {
+        if (!temporadaActivaId) return;
+        try {
+            await axios.put(`http://localhost:5000/api/temporadas/${temporadaActivaId}/finalizar`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            showNotification("Temporada finalizada correctamente", "success");
+            setModalFinalizarTemporadaActivo(false);
+            cargarTemporadas();
+        } catch (error) {
+            console.error("Error al finalizar la temporada:", error);
+            showNotification(error.response?.data?.error || "Error al finalizar la temporada", "error");
+        }
+    };
+
+    // Reabrir la temporada actual
+    const handleReabrirTemporada = async () => {
+        if (!temporadaActivaId) return;
+        const confirmado = await confirm("¿Reabrir Temporada?", "¿Seguro que deseas reabrir esta temporada? Se volverán a permitir modificaciones, fixtures, fichajes y partidos.");
+        if (!confirmado) return;
+        try {
+            await axios.put(`http://localhost:5000/api/temporadas/${temporadaActivaId}/reabrir`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            showNotification("Temporada reabierta correctamente", "success");
+            cargarTemporadas();
+        } catch (error) {
+            console.error("Error al reabrir la temporada:", error);
+            showNotification(error.response?.data?.error || "Error al reabrir la temporada", "error");
         }
     };
 
@@ -1122,9 +1181,16 @@ const Admin = () => {
 
                                 {/* Selector Temporada Activa */}
                                 <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-6 shadow-xl shadow-black/20 space-y-4">
-                                    <div className="flex items-center gap-2 border-b border-slate-800/50 pb-3">
-                                        <CalendarRange className="w-5 h-5 text-orange-500" />
-                                        <h3 className="text-md font-bold text-white">Temporada Activa</h3>
+                                    <div className="flex items-center justify-between border-b border-slate-800/50 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <CalendarRange className="w-5 h-5 text-orange-500" />
+                                            <h3 className="text-md font-bold text-white">Temporada Activa</h3>
+                                        </div>
+                                        {temporadaFinalizada && (
+                                            <span className="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 uppercase tracking-wider">
+                                                Finalizada
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-xs text-slate-400 font-medium">Selecciona la temporada que se visualizará por defecto.</p>
                                     
@@ -1132,17 +1198,37 @@ const Admin = () => {
                                         <select
                                             value={temporadaActivaId}
                                             onChange={(e) => handleCambiarTemporadaActiva(e.target.value)}
-                                            className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 transition-colors duration-200 cursor-pointer appearance-none"
+                                            className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 transition-colors duration-200 cursor-pointer appearance-none animate-none"
                                         >
                                             <option value="">-- Seleccionar Temporada --</option>
                                             {temporadas.map(t => (
                                                 <option key={t.id} value={t.id} className="bg-slate-900 text-slate-200">
-                                                    {t.nombre} {t.actual ? '(Activa)' : ''}
+                                                    {t.nombre} {t.actual ? '(Activa)' : ''} {t.finalizada ? '(Finalizada)' : ''}
                                                 </option>
                                             ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">▼</div>
                                     </div>
+
+                                    {temporadaActivaId && (
+                                        <div className="pt-2">
+                                            {temporadaFinalizada ? (
+                                                <button
+                                                    onClick={handleReabrirTemporada}
+                                                    className="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold rounded-xl text-xs uppercase tracking-wider transition-all duration-250 cursor-pointer flex items-center justify-center gap-2"
+                                                >
+                                                    Reabrir Temporada
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={handleAbrirConfirmarFinalizar}
+                                                    className="w-full py-2.5 px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold rounded-xl text-xs uppercase tracking-wider transition-all duration-250 cursor-pointer flex items-center justify-center gap-2"
+                                                >
+                                                    Finalizar Temporada
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Formulario Crear/Editar */}
@@ -1154,6 +1240,12 @@ const Admin = () => {
                                         </h3>
                                     </div>
                                     
+                                    {isFormTemporadaFinalizada && (
+                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-semibold text-red-400">
+                                            Esta temporada está finalizada y no puede ser editada directamente. Primero debes reabrirla.
+                                        </div>
+                                    )}
+
                                     <form onSubmit={handleSubmitTemporada} className="space-y-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Nombre de la Temporada</label>
@@ -1163,7 +1255,8 @@ const Admin = () => {
                                                 value={formTemporada.nombre}
                                                 onChange={(e) => setFormTemporada({ ...formTemporada, nombre: e.target.value })}
                                                 required
-                                                className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200"
+                                                disabled={isFormTemporadaFinalizada}
+                                                className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         </div>
 
@@ -1175,7 +1268,8 @@ const Admin = () => {
                                                     value={formTemporada.fecha_inicio}
                                                     onChange={(e) => setFormTemporada({ ...formTemporada, fecha_inicio: e.target.value })}
                                                     required
-                                                    className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200"
+                                                    disabled={isFormTemporadaFinalizada}
+                                                    className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1185,7 +1279,8 @@ const Admin = () => {
                                                     value={formTemporada.fecha_fin}
                                                     onChange={(e) => setFormTemporada({ ...formTemporada, fecha_fin: e.target.value })}
                                                     required
-                                                    className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200"
+                                                    disabled={isFormTemporadaFinalizada}
+                                                    className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                             </div>
                                         </div>
@@ -1193,7 +1288,8 @@ const Admin = () => {
                                         <div className="flex items-center gap-3 pt-2">
                                             <button 
                                                 type="submit" 
-                                                className="flex-1 py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-orange-500/10"
+                                                disabled={isFormTemporadaFinalizada}
+                                                className="flex-1 py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-800 disabled:text-slate-550 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-orange-500/10 disabled:shadow-none disabled:cursor-not-allowed"
                                             >
                                                 {formTemporada.id ? 'Guardar Cambios' : 'Crear Temporada'}
                                             </button>
@@ -1209,13 +1305,19 @@ const Admin = () => {
                                         </div>
                                     </form>
                                 </div>
-
                             </div>
 
                             {/* Fila intermedia: Equipos y Calendario (solo si hay temporada activa) */}
                             {temporadaActivaId ? (
                                 <div className="space-y-8">
                                     
+                                    {temporadaFinalizada && (
+                                        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-xs font-semibold flex items-center gap-3">
+                                            <Lock className="w-5 h-5 text-red-400" />
+                                            <span>Esta temporada está finalizada. No se permiten cambios en sus equipos asignados ni en su calendario.</span>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                                         {/* Equipos Participantes */}
@@ -1225,12 +1327,14 @@ const Admin = () => {
                                                     <Users className="w-5 h-5 text-orange-500" />
                                                     Equipos Asignados
                                                 </h3>
-                                                <button
-                                                    className="inline-flex items-center gap-1 py-1.5 px-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border border-orange-500/20 rounded-lg text-xs font-bold transition-colors"
-                                                    onClick={() => setModalActivo('asignar_equipos')}
-                                                >
-                                                    Asignar
-                                                </button>
+                                                {!temporadaFinalizada && (
+                                                    <button
+                                                        className="inline-flex items-center gap-1 py-1.5 px-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border border-orange-500/20 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                        onClick={() => setModalActivo('asignar_equipos')}
+                                                    >
+                                                        Asignar
+                                                    </button>
+                                                )}
                                             </div>
 
                                             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
@@ -1262,20 +1366,22 @@ const Admin = () => {
                                                     <Trophy className="w-5 h-5 text-orange-500" />
                                                     Calendario / Fixture
                                                 </h3>
-                                                <div className="flex items-center gap-2">
-                                                    <button 
-                                                        onClick={handleGenerarCalendario} 
-                                                        className="py-1.5 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors"
-                                                    >
-                                                        Generar
-                                                    </button>
-                                                    <button 
-                                                        onClick={handleEliminarCalendario} 
-                                                        className="py-1.5 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-bold transition-colors"
-                                                    >
-                                                        Eliminar
-                                                    </button>
-                                                </div>
+                                                {!temporadaFinalizada && (
+                                                    <div className="flex items-center gap-2">
+                                                        <button 
+                                                            onClick={handleGenerarCalendario} 
+                                                            className="py-1.5 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                        >
+                                                            Generar
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleEliminarCalendario} 
+                                                            className="py-1.5 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                        >
+                                                            Eliminar
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
@@ -1449,30 +1555,43 @@ const Admin = () => {
                                         {temporadas.map(t => (
                                             <div key={t.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/20 border border-slate-850 hover:border-slate-800 transition-all">
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-slate-200 truncate">{t.nombre}</p>
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <p className="text-xs font-bold text-slate-200 truncate">{t.nombre}</p>
+                                                        {t.finalizada && (
+                                                            <span className="text-[9px] text-red-400 font-extrabold bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 uppercase tracking-wide flex-shrink-0">
+                                                                Finalizada
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-[10px] text-slate-500 font-medium">
                                                         {t.fecha_inicio ? t.fecha_inicio.split('T')[0] : ''} al {t.fecha_fin ? t.fecha_fin.split('T')[0] : ''}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        onClick={() => {
-                                                            setFormTemporada({
-                                                                id: t.id,
-                                                                nombre: t.nombre,
-                                                                fecha_inicio: t.fecha_inicio ? t.fecha_inicio.split('T')[0] : '',
-                                                                fecha_fin: t.fecha_fin ? t.fecha_fin.split('T')[0] : ''
-                                                            });
-                                                            setActiveTab('temporadas');
-                                                        }}
-                                                        className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-850 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                    </button>
+                                                    {t.finalizada ? (
+                                                        <span className="w-7 h-7 rounded-lg bg-slate-950 border border-slate-850 flex items-center justify-center text-slate-500" title="Finalizada - No se puede editar">
+                                                            <Lock className="w-3.5 h-3.5" />
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setFormTemporada({
+                                                                    id: t.id,
+                                                                    nombre: t.nombre,
+                                                                    fecha_inicio: t.fecha_inicio ? t.fecha_inicio.split('T')[0] : '',
+                                                                    fecha_fin: t.fecha_fin ? t.fecha_fin.split('T')[0] : ''
+                                                                });
+                                                                setActiveTab('temporadas');
+                                                            }}
+                                                            className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-850 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleEliminarTemporada(t.id)}
-                                                        className="w-7 h-7 rounded-lg bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 flex items-center justify-center text-red-400 transition-colors"
+                                                        className="w-7 h-7 rounded-lg bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 flex items-center justify-center text-red-400 transition-colors cursor-pointer"
                                                         title="Eliminar"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -1876,18 +1995,6 @@ const Admin = () => {
                                 </div>
                                 <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl hover:-translate-y-1 transition-all duration-200 group">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">En Vivo</p>
-                                        <span className="flex h-2 w-2 relative">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                        </span>
-                                    </div>
-                                    <p className="text-2xl font-black text-white mt-2">
-                                        {partidos.filter(p => !p.finalizado && new Date(p.fecha + 'T00:00:00').toDateString() === new Date().toDateString()).length}
-                                    </p>
-                                </div>
-                                <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl hover:-translate-y-1 transition-all duration-200 group">
-                                    <div className="flex items-center justify-between">
                                         <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Finalizados</p>
                                         <Trophy className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
                                     </div>
@@ -1895,19 +2002,25 @@ const Admin = () => {
                                         {partidos.filter(p => p.finalizado && p.puntos_local !== null && p.puntos_local !== undefined).length}
                                     </p>
                                 </div>
-                                <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl hover:-translate-y-1 transition-all duration-200 group">
+                                <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl hover:-translate-y-1 transition-all duration-200 group border-yellow-500/20 bg-yellow-500/5">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Pendientes</p>
-                                        <Clock className="w-5 h-5 text-orange-550 text-orange-500" />
+                                        <p className="text-[10px] uppercase text-yellow-500 font-bold tracking-wider">Sin Marcador</p>
+                                        <AlertTriangle className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                                     </div>
-                                    <p className="text-2xl font-black text-white mt-2">
-                                        {partidos.filter(p => (!p.finalizado && new Date(p.fecha + 'T00:00:00') < new Date().setHours(0,0,0,0) && new Date(p.fecha + 'T00:00:00').toDateString() !== new Date().toDateString()) || (p.finalizado && (p.puntos_local === null || p.puntos_local === undefined))).length}
+                                    <p className="text-2xl font-black text-yellow-500 mt-2">
+                                        {partidos.filter(p => p.finalizado && (p.puntos_local === null || p.puntos_local === undefined)).length}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Listado de Partidos */}
-                            <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-6 shadow-xl">
+                            <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/80 p-6 shadow-xl space-y-4">
+                                {isSelectedSeasonFinalized && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-semibold flex items-center gap-3">
+                                        <Lock className="w-5 h-5 text-red-400" />
+                                        <span>Esta temporada está finalizada. No se pueden programar nuevos partidos ni editar los existentes.</span>
+                                    </div>
+                                )}
                                 <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800/60 pb-4 mb-5 gap-4">
                                     <div>
                                         <h3 className="text-md font-bold text-white flex items-center gap-2">
@@ -1921,10 +2034,10 @@ const Admin = () => {
                                             <select
                                                 value={filterMatchSeason}
                                                 onChange={(e) => setFilterMatchSeason(e.target.value)}
-                                                className="bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-slate-700 rounded-xl py-2 pl-3 pr-8 text-xs font-semibold text-slate-200 outline-none w-full sm:w-44 cursor-pointer appearance-none"
+                                                className="bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-slate-700 rounded-xl py-2 pl-3 pr-8 text-xs font-semibold text-slate-200 outline-none w-full sm:w-44 cursor-pointer appearance-none animate-none"
                                             >
                                                 {temporadas.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                                                    <option key={t.id} value={t.id}>{t.nombre} {t.finalizada ? '(Finalizada)' : ''}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▼</div>
@@ -1934,7 +2047,7 @@ const Admin = () => {
                                             <select
                                                 value={filterMatchJornada}
                                                 onChange={(e) => setFilterMatchJornada(e.target.value)}
-                                                className="bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-slate-700 rounded-xl py-2 pl-3 pr-8 text-xs font-semibold text-slate-200 outline-none w-full sm:w-32 cursor-pointer appearance-none"
+                                                className="bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-slate-700 rounded-xl py-2 pl-3 pr-8 text-xs font-semibold text-slate-200 outline-none w-full sm:w-32 cursor-pointer appearance-none animate-none"
                                             >
                                                 <option value="">Todas</option>
                                                 {uniqueJornadas.map(j => (
@@ -1955,13 +2068,15 @@ const Admin = () => {
                                             <Search className="w-3.5 h-3.5 text-slate-550 absolute left-3 top-1/2 -translate-y-1/2" />
                                         </div>
 
-                                        <button
-                                            className="inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-orange-500/10"
-                                            onClick={() => abrirModalPartido('crear')}
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            <span>Nuevo Partido</span>
-                                        </button>
+                                        {!isSelectedSeasonFinalized && (
+                                            <button
+                                                className="inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-orange-500/10 cursor-pointer"
+                                                onClick={() => abrirModalPartido('crear')}
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                <span>Nuevo Partido</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -2034,28 +2149,36 @@ const Admin = () => {
                                                             </td>
                                                             <td className="py-3 px-4 text-right">
                                                                 <div className="flex items-center justify-end gap-2">
-                                                                    {(!p.finalizado || sinMarcador) && (
-                                                                        <button
-                                                                            className={`inline-flex items-center justify-center px-2.5 py-1 text-[10px] font-bold text-white rounded-lg transition-colors ${sinMarcador ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-orange-500 hover:bg-orange-600'}`}
-                                                                            onClick={() => abrirModalFinalizarPartido(p)}
-                                                                        >
-                                                                            {sinMarcador ? 'Completar' : 'Finalizar'}
-                                                                        </button>
+                                                                    {isSelectedSeasonFinalized ? (
+                                                                        <span className="text-[10px] text-slate-500 font-bold bg-slate-950/40 px-2 py-1 rounded-lg border border-slate-850 flex items-center gap-1">
+                                                                            Solo lectura
+                                                                        </span>
+                                                                    ) : (
+                                                                        <>
+                                                                            {(!p.finalizado || sinMarcador) && (
+                                                                                <button
+                                                                                    className={`inline-flex items-center justify-center px-2.5 py-1 text-[10px] font-bold text-white rounded-lg transition-colors cursor-pointer ${sinMarcador ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                                                                                    onClick={() => abrirModalFinalizarPartido(p)}
+                                                                                >
+                                                                                    {sinMarcador ? 'Completar' : 'Finalizar'}
+                                                                                </button>
+                                                                            )}
+                                                                            <button
+                                                                                className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-850 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                                                                onClick={() => abrirModalPartido('editar', p)}
+                                                                                title="Editar"
+                                                                            >
+                                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                            <button
+                                                                                className="w-7 h-7 rounded-lg bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 flex items-center justify-center text-red-400 transition-colors cursor-pointer"
+                                                                                onClick={() => handleEliminarPartido(p.id)}
+                                                                                title="Eliminar"
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </>
                                                                     )}
-                                                                    <button
-                                                                        className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-850 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                                                                        onClick={() => abrirModalPartido('editar', p)}
-                                                                        title="Editar"
-                                                                    >
-                                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        className="w-7 h-7 rounded-lg bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 flex items-center justify-center text-red-400 transition-colors"
-                                                                        onClick={() => handleEliminarPartido(p.id)}
-                                                                        title="Eliminar"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -2099,6 +2222,106 @@ const Admin = () => {
                 </main>
 
             {/* MODALES */}
+
+            {/* Modal de Confirmación de Finalizar Temporada */}
+            {modalFinalizarTemporadaActivo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => setModalFinalizarTemporadaActivo(false)}>
+                    <div 
+                        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl shadow-black overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Modal */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 flex-shrink-0">
+                            <div>
+                                <h2 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                                    Finalizar Temporada
+                                </h2>
+                            </div>
+                            <button 
+                                className="w-8 h-8 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-850 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                onClick={() => setModalFinalizarTemporadaActivo(false)}
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Contenido Modal */}
+                        <div className="p-6 space-y-4">
+                            {cargandoResumen ? (
+                                <div className="py-8 text-center text-slate-500 text-sm font-semibold flex flex-col items-center justify-center">
+                                    <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-3" />
+                                    Cargando resumen de temporada...
+                                </div>
+                            ) : resumenTemporada ? (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-slate-350 leading-relaxed">
+                                        ¿Estás seguro de que deseas finalizar la temporada <strong className="text-white">{resumenTemporada.nombre}</strong>? 
+                                    </p>
+
+                                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-xl text-xs font-semibold leading-relaxed flex gap-2.5">
+                                        <Info className="w-5 h-5 flex-shrink-0 text-red-400" />
+                                        <div>
+                                            <strong>¡IMPORTANTE!</strong> Al finalizar la temporada no se permitirán más cambios: no podrás modificar partidos, generar fixtures, inscribir/remover equipos, ni gestionar fichajes.
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Resumen de Pendientes</h4>
+                                        <ul className="divide-y divide-slate-850 bg-slate-950/30 border border-slate-850 rounded-xl px-4 py-2 text-xs font-medium space-y-1">
+                                            <li className="flex justify-between items-center py-2">
+                                                <span className="text-slate-400">Equipos Inscritos</span>
+                                                <span className="text-white font-extrabold">{resumenTemporada.equiposAsignados}</span>
+                                            </li>
+                                            <li className="flex justify-between items-center py-2">
+                                                <span className="text-slate-400">Partidos Totales</span>
+                                                <span className="text-white font-extrabold">{resumenTemporada.partidosTotales}</span>
+                                            </li>
+                                            <li className="flex justify-between items-center py-2">
+                                                <span className="text-slate-400">Partidos Pendientes (Sin jugar)</span>
+                                                <span className={`font-extrabold ${resumenTemporada.partidosSinJugar > 0 ? 'text-orange-500' : 'text-emerald-400'}`}>
+                                                    {resumenTemporada.partidosSinJugar}
+                                                </span>
+                                            </li>
+                                            <li className="flex justify-between items-center py-2">
+                                                <span className="text-slate-400">Partidos Jugados Sin Resultado</span>
+                                                <span className={`font-extrabold ${resumenTemporada.partidosSinResultado > 0 ? 'text-red-500' : 'text-emerald-400'}`}>
+                                                    {resumenTemporada.partidosSinResultado}
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    {(resumenTemporada.partidosSinJugar > 0 || resumenTemporada.partidosSinResultado > 0) && (
+                                        <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-xl text-xs font-semibold">
+                                            ⚠️ Aún quedan partidos sin jugar o sin resultado cargado en el sistema.
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 text-center">No se pudo cargar el resumen.</p>
+                            )}
+                        </div>
+
+                        {/* Footer Modal */}
+                        <div className="px-6 py-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center justify-end gap-3">
+                            <button
+                                className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                                onClick={() => setModalFinalizarTemporadaActivo(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="py-2 px-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-red-600/10 cursor-pointer"
+                                onClick={handleFinalizarTemporada}
+                                disabled={cargandoResumen || !resumenTemporada}
+                            >
+                                Confirmar y Finalizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 1. Modal Asignar Equipos a Temporada */}
             {modalActivo === 'asignar_equipos' && (
@@ -2600,11 +2823,11 @@ const Admin = () => {
                                                     name="temporada_id"
                                                     value={formPlayer.temporada_id}
                                                     onChange={handlePlayerInputChange}
-                                                    className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer"
+                                                    className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer animate-none"
                                                 >
-                                                    <option value="">-- Seleccionar Temporada --</option>
+                                                    <option value="" disabled>-- Seleccionar Temporada --</option>
                                                     {temporadas.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                                                        <option key={t.id} value={t.id} disabled={t.finalizada || t.id === 1}>{t.nombre} {t.finalizada ? '(Finalizada)' : ''}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -2738,7 +2961,7 @@ const Admin = () => {
                                                     required
                                                     className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer"
                                                 >
-                                                    <option value="">-- Seleccionar Local --</option>
+                                                    <option value="" disabled>-- Seleccionar Local --</option>
                                                     {equipos.map(eq => (
                                                         <option key={eq.id} value={eq.id}>{eq.nombre}</option>
                                                     ))}
@@ -2753,7 +2976,7 @@ const Admin = () => {
                                                     required
                                                     className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer"
                                                 >
-                                                    <option value="">-- Seleccionar Visitante --</option>
+                                                    <option value="" disabled>-- Seleccionar Visitante --</option>
                                                     {equipos.map(eq => (
                                                         <option key={eq.id} value={eq.id}>{eq.nombre}</option>
                                                     ))}
@@ -2791,44 +3014,46 @@ const Admin = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Lugar / Estadio *</label>
+                                            <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Lugar / Estadio </label>
                                             <input
                                                 type="text"
                                                 name="lugar"
                                                 value={formMatch.lugar}
                                                 onChange={handleMatchInputChange}
                                                 required
+                                                placeholder="(Dejar en blanco para usar el estadio del equipo local)"
                                                 className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Jornada *</label>
+                                                <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Temporada </label>
+                                                <select
+                                                    name="temporada_id"
+                                                    value={formMatch.temporada_id}
+                                                    onChange={handleMatchInputChange}
+                                                    required
+                                                    className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer animate-none"
+                                                >
+                                                    <option value="" disabled>-- Seleccionar Temporada --</option>
+                                                    {temporadas.map(t => (
+                                                        <option key={t.id} value={t.id} disabled={t.finalizada}>{t.nombre} {t.finalizada ? '(Finalizada)' : ''}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Jornada </label>
                                                 <input
                                                     type="number"
                                                     name="jornada"
                                                     value={formMatch.jornada}
                                                     onChange={handleMatchInputChange}
                                                     required
-                                                    placeholder="Ej. 1"
+                                                    placeholder="(Dejar en blanco para amistoso)"
                                                     className="w-full bg-slate-950/60 border border-slate-850 hover:border-slate-800 focus:border-orange-500/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none transition-colors duration-200"
                                                 />
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] uppercase font-bold text-slate-555 text-slate-500 tracking-wider">Temporada *</label>
-                                                <select
-                                                    name="temporada_id"
-                                                    value={formMatch.temporada_id}
-                                                    onChange={handleMatchInputChange}
-                                                    required
-                                                    className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-orange-500/50 cursor-pointer"
-                                                >
-                                                    <option value="">-- Seleccionar Temporada --</option>
-                                                    {temporadas.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.nombre}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 )}
@@ -3174,7 +3399,12 @@ const TeamAssignmentList = ({ allTeams, initiallySelected, filterQuery, onSave, 
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
+                <span>Equipos en la lista: <strong className="text-slate-200">{filteredTeams.length}</strong></span>
+                <span>Seleccionados: <strong className="text-orange-500 font-extrabold">{selectedIds.length}</strong></span>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[45vh] overflow-y-auto pr-1 custom-scrollbar">
                 {filteredTeams.length > 0 ? (
                     filteredTeams.map(team => {

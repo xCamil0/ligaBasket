@@ -238,4 +238,115 @@ const obtenerEquipos = async (req, res) => {
     }
 };
 
-module.exports = { listar, crear, eliminar, actualizar, actual, asignarEquipos, desasignarEquipos, obtenerEquipos };
+/** Obtiene un resumen de los partidos pendientes, sin resultado y equipos de una temporada. */
+const obtenerResumenTemporada = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const tempCheck = await pool.query('SELECT * FROM temporadas WHERE id = $1', [id]);
+        if (tempCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Temporada no encontrada" });
+        }
+
+        const partidosSinResultadoRes = await pool.query(
+            "SELECT COUNT(*)::int as cant FROM partidos WHERE temporada_id = $1 AND finalizado = true AND (puntos_local IS NULL OR puntos_visitante IS NULL)",
+            [id]
+        );
+
+        const partidosSinJugarRes = await pool.query(
+            "SELECT COUNT(*)::int as cant FROM partidos WHERE temporada_id = $1 AND finalizado = false",
+            [id]
+        );
+
+        const partidosTotalesRes = await pool.query(
+            "SELECT COUNT(*)::int as cant FROM partidos WHERE temporada_id = $1",
+            [id]
+        );
+
+        const equiposAsignadosRes = await pool.query(
+            "SELECT COUNT(*)::int as cant FROM temporada_equipos WHERE temporada_id = $1",
+            [id]
+        );
+
+        res.json({
+            nombre: tempCheck.rows[0].nombre,
+            finalizada: tempCheck.rows[0].finalizada || false,
+            partidosSinResultado: partidosSinResultadoRes.rows[0].cant,
+            partidosSinJugar: partidosSinJugarRes.rows[0].cant,
+            partidosTotales: partidosTotalesRes.rows[0].cant,
+            equiposAsignados: equiposAsignadosRes.rows[0].cant
+        });
+    } catch (error) {
+        console.error("Error al obtener resumen de temporada:", error);
+        res.status(500).json({ error: "Error al obtener el resumen de la temporada" });
+    }
+};
+
+/** Finaliza una temporada cambiando su estado a finalizada = true. */
+const finalizarTemporada = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const tempCheck = await pool.query('SELECT * FROM temporadas WHERE id = $1', [id]);
+        if (tempCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Temporada no encontrada" });
+        }
+
+        if (tempCheck.rows[0].finalizada) {
+            return res.status(400).json({ error: "La temporada ya se encuentra finalizada" });
+        }
+
+        const result = await pool.query(
+            'UPDATE temporadas SET finalizada = true WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        res.json({
+            mensaje: "Temporada finalizada correctamente",
+            temporada: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error al finalizar temporada:", error);
+        res.status(500).json({ error: "Error al finalizar la temporada" });
+    }
+};
+
+/** Reabre una temporada finalizada cambiando su estado a finalizada = false. */
+const reabrirTemporada = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const tempCheck = await pool.query('SELECT * FROM temporadas WHERE id = $1', [id]);
+        if (tempCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Temporada no encontrada" });
+        }
+
+        if (!tempCheck.rows[0].finalizada) {
+            return res.status(400).json({ error: "La temporada no está finalizada" });
+        }
+
+        const result = await pool.query(
+            'UPDATE temporadas SET finalizada = false WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        res.json({
+            mensaje: "Temporada reabierta correctamente",
+            temporada: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error al reabrir temporada:", error);
+        res.status(500).json({ error: "Error al reabrir la temporada" });
+    }
+};
+
+module.exports = {
+    listar,
+    crear,
+    eliminar,
+    actualizar,
+    actual,
+    asignarEquipos,
+    desasignarEquipos,
+    obtenerEquipos,
+    obtenerResumenTemporada,
+    finalizarTemporada,
+    reabrirTemporada
+};

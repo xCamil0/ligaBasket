@@ -16,12 +16,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const router = express.Router();
+const verificarTemporadaFinalizada = require('../middlewares/verificarTemporadaFinalizada');
 
 router.get('/', equipoController.obtenerEquipos);
 router.post('/', 
     auth.verificarToken, 
     upload.single('foto'), 
     validarRequeridos(['nombre', 'entrenador', 'estadio', 'temporada_id']),
+    verificarTemporadaFinalizada({ origen: 'body', campo: 'temporada_id' }),
     equipoController.crearEquipo
 );
 router.delete('/:id', 
@@ -42,6 +44,7 @@ router.get('/:id/detalle',
 router.post('/fichar', 
     auth.verificarToken, 
     validarRequeridos(['jugador_id', 'temporada_id']),
+    verificarTemporadaFinalizada({ origen: 'body', campo: 'temporada_id' }),
     equipoController.gestionarFichajeOLiberacion
 );
 router.get('/por-temporada', 

@@ -2,24 +2,24 @@ import { useState } from 'react';
 import axios from 'axios';
 import { X, LogIn, ShieldAlert } from 'lucide-react';
 
-const LoginModal = ({ onClose, onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+const LoginModal = ({ alCerrar, alIniciarSesionCorrecto }) => {
+  const [usuario, setUsuario] = useState('');
+  const [contrasenia, setContrasenia] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [estaCargando, setEstaCargando] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+    setEstaCargando(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
-        username,
-        password
+      const respuesta = await axios.post('http://localhost:5000/api/auth/login', {
+        username: usuario,
+        password: contrasenia
       });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('username', res.data.username);
-      onLoginSuccess();
+      localStorage.setItem('token', respuesta.data.token);
+      localStorage.setItem('username', respuesta.data.username);
+      alIniciarSesionCorrecto();
     } catch (err) {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
@@ -27,7 +27,7 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
         setError("Error al iniciar sesión");
       }
     } finally {
-      setIsLoading(false);
+      setEstaCargando(false);
     }
   };
 
@@ -36,7 +36,7 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
       <div className="bg-slate-900 border border-slate-800/80 p-8 rounded-2xl w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200">
         <button 
           className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-800/50 rounded-lg cursor-pointer" 
-          onClick={onClose}
+          onClick={alCerrar}
           aria-label="Cerrar modal"
         >
           <X className="w-5 h-5" />
@@ -57,13 +57,13 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={manejarEnvio} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Usuario</label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-950/80 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium placeholder-slate-600"
               placeholder="Ej. admin"
               required
@@ -73,8 +73,8 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Contraseña</label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={contrasenia}
+              onChange={(e) => setContrasenia(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-950/80 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium placeholder-slate-700"
               placeholder="••••••••"
               required
@@ -83,10 +83,10 @@ const LoginModal = ({ onClose, onLoginSuccess }) => {
 
           <button 
             type="submit" 
-            disabled={isLoading}
+            disabled={estaCargando}
             className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-slate-950 font-bold rounded-xl shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mt-6"
           >
-            {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+            {estaCargando ? 'Iniciando sesión...' : 'Ingresar'}
           </button>
         </form>
       </div>

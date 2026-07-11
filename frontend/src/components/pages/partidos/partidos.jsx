@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Calendar, MapPin, Clock, CheckCircle2, Search, X } from 'lucide-react';
 
 const Partidos = () => {
+    const location = useLocation();
     const [temporadas, setTemporadas] = useState([]);
     const [temporadaId, setTemporadaId] = useState('');
     const [partidos, setPartidos] = useState([]);
@@ -21,14 +22,24 @@ const Partidos = () => {
         return local.includes(query) || visitante.includes(query);
     });
 
-    // Cargar temporadas al montar
+    // Leer query param ?equipo= al montar y pre-rellenar el buscador
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const equipoParam = params.get('equipo');
+        if (equipoParam) setBusqueda(equipoParam);
+    }, [location.search]);
+
+    // Cargar temporadas al montar y seleccionar 2026 por defecto
     useEffect(() => {
         const cargarTemporadas = async () => {
             try {
                 const res = await axios.get('http://localhost:5000/api/temporadas');
                 setTemporadas(res.data);
                 if (res.data.length > 0) {
-                    setTemporadaId(res.data[res.data.length - 1].id);
+                    // Preferir la temporada 2026; si no existe, usar la última
+                    const t2026 = res.data.find(t => t.nombre?.includes('2026'));
+                    const porDefecto = t2026 ?? res.data[res.data.length - 1];
+                    setTemporadaId(porDefecto.id);
                 }
             } catch (error) {
                 console.error('Error cargando temporadas:', error);

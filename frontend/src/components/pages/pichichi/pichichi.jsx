@@ -16,7 +16,10 @@ const Pichichi = () => {
                 setTemporadas(res.data);
 
                 if (res.data.length > 0) {
-                    setTemporadaId(res.data[res.data.length - 1].id);
+                    // Buscar la temporada 2026; si no existe, usar la última disponible
+                    const temporada2026 = res.data.find(t => t.nombre?.includes('2026'));
+                    const porDefecto = temporada2026 ?? res.data[res.data.length - 1];
+                    setTemporadaId(porDefecto.id);
                 }
             } catch (error) {
                 console.error("Error cargando temporadas:", error);

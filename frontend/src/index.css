@@ -29,7 +29,7 @@
 }
 
 :root {
-  --bg-gradient: radial-gradient(circle at 50% 0%, #2d3875 0%, #12123b 100%);
+  --bg-gradient: radial-gradient(circle at 50% 0%, #202646 0%, #080831 100%);
   --brand-orange: #ff5500;
   --brand-orange-grad: linear-gradient(135deg, #ff7700 0%, #ff3300 100%);
   --brand-glow: rgba(255, 85, 0, 0.2);
@@ -157,4 +157,221 @@ table tbody tr:hover {
         overflow-x: auto;
         padding-bottom: 0.25rem;
     }
+}
+
+/* ==========================================================================
+   Configuración del Modo Claro
+   ========================================================================== */
+:root.light, body.light {
+  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  
+  --color-slate-950: #ffffff;
+  --color-slate-900: #f8fafc;
+  --color-slate-850: #f1f5f9;
+  --color-slate-800: #e2e8f0;
+  --color-slate-750: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+}
+
+/* Corrección de color de los encabezados */
+.light h1,
+.light h2,
+.light h3,
+.light h4,
+.light h5,
+.light h6 {
+  color: #0f172a !important;
+}
+
+/* Mantener el texto con gradiente naranja */
+.light h2[style*="background"], 
+.light h3[style*="background"] {
+  background-image: var(--brand-orange-grad) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Fondos de tarjetas con efecto glassmorphism y opacidad personalizada */
+.light .bg-slate-950\/40 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light .bg-slate-900\/60 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .bg-slate-900\/50 {
+  background-color: rgba(248, 250, 252, 0.85) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .bg-slate-900\/40 {
+  background-color: rgba(248, 250, 252, 0.75) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .bg-slate-900\/20 {
+  background-color: rgba(248, 250, 252, 0.3) !important;
+}
+
+/* Ajustes de bordes */
+.light .border-slate-900 {
+  border-color: #e2e8f0 !important;
+}
+
+.light .border-slate-850 {
+  border-color: #cbd5e1 !important;
+}
+
+.light .border-slate-800 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Correcciones de colores de texto */
+.light .text-white {
+  color: #0f172a !important;
+}
+
+.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.light .text-slate-350,
+.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Preservar texto blanco en botones y fondos con degradados */
+.light button.bg-orange-500,
+.light button.bg-orange-600,
+.light .bg-orange-500,
+.light .bg-orange-600,
+.light .bg-linear-to-r,
+.light .bg-linear-to-tr,
+.light .bg-gradient-to-r,
+.light .bg-gradient-to-tr,
+.light .bg-orange-500 *,
+.light .bg-orange-600 *,
+.light .bg-linear-to-r *,
+.light .bg-gradient-to-r *,
+.light .bg-gradient-to-tr *,
+.light .bg-linear-to-tr * {
+  color: #ffffff !important;
+}
+
+.light a.bg-linear-to-r,
+.light a.bg-linear-to-tr {
+  color: #0f172a !important; /* Legibilidad del texto del elemento activo de navegación */
+}
+
+/* Selectores y menús desplegables */
+.light select {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Campos de entrada */
+.light input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Ajustes de estilos en tablas */
+.light table thead tr {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  border-bottom: 2px solid rgba(255, 85, 0, 0.2) !important;
+}
+
+.light table thead th {
+  color: #475569 !important;
+}
+
+.light table tbody tr {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.light table tbody tr:hover {
+  background-color: rgba(255, 85, 0, 0.04) !important;
+}
+
+.light table tbody td {
+  color: #1e293b !important;
+}
+
+/* Barra de navegación (Navbar) */
+.light nav {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light nav span.text-white {
+  color: #0d0f17 !important;
+}
+
+.light nav span.text-orange-500 {
+  color: #ff5500 !important;
+}
+
+.light .mobile-drawer {
+  background-color: #ffffff !important;
+  border-left-color: #e2e8f0 !important;
+}
+
+.light .fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+/* Cajas de fechas en Scoreboard */
+.light .shrink-0 .bg-slate-900 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .shrink-0 .bg-slate-900 span.text-white {
+  color: #0f172a !important;
+}
+
+/* Pie de página (Footer) */
+.light footer {
+  border-top-color: #cbd5e1 !important;
+}
+.light footer span.text-white {
+  color: #0f172a !important;
+}
+.light footer h4.text-white {
+  color: #0f172a !important;
+}
+.light footer p.text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Ajustes de estilo del botón flotante */
+body.light .fixed.bottom-20,
+body.light .fixed.bottom-6 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
